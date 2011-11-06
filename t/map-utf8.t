@@ -17,6 +17,7 @@ $mp = new AIAnts::Map(
 	cols => 6,
 	rows => 6,
 	viewradius2 => 4,
+	o_utf8 => 1,
 	o_line_prefix => '# ',
 );
 $mp->set_view( 2, 2 );
