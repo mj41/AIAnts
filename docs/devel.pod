@@ -1,0 +1,15 @@
+=head1 Info
+
+=head2 Run tests
+
+ prove
+ 
+=head2 Run empty bot
+
+ mkdir temp
+ cp bots/01-empty.pm MyBot.pm
+
+ perl MyBot.pl 10 t/data/game-web.txt temp/output-log.txt
+ less temp/output-log.txt
+ 
+=cut

@@ -48,7 +48,7 @@ sub new {
 	$self->{o_chars} = {
 		unknown  => [ '.', chr(0x00B7)  ],
 		explored => [ 'o', chr(0x2022)  ],
-		water    => [ 'w', chr(0x25A0)  ],
+		water    => [ '%', chr(0x25A0)  ],
 		food     => [ 'f', chr(0x2740)  ],
 		hive     => [ 'h', chr(0x27D0)  ],
 		ant      => [ 'a', chr(0x10312) ],
