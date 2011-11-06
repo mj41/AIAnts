@@ -82,6 +82,7 @@ sub run {
 
 	$self->parse_setup();
 	$self->setup();
+	$self->my_say('go');
 
 	while (1) {
 		$self->init_turn();
@@ -118,6 +119,7 @@ sub parse_setup {
     while (1) {
         my $line = <$fh>;
         chomp( $line );
+        next unless $line;
         last if $line eq 'ready';
 
         my ( $key, $value ) = split( /\s/, $line );
@@ -219,8 +221,8 @@ sub turn {
     foreach my $order ( @orders ) {
     	$self->issue_order( @$order );
     }
-
     $self->my_say('go');
+    return 1;
 }
 
 =head2 issue_order
@@ -230,7 +232,7 @@ Method to issue an order to the server.
 =cut
 
 sub issue_order {
-    my ($self, $x, $y, $direction) = @_;
+    my ( $self, $x, $y, $direction ) = @_;
     $self->my_say(
 		sprintf( 'o %d %d %s', $x, $y, $direction )
 	);

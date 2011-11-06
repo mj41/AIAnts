@@ -3,15 +3,17 @@
 use strict;
 use warnings;
 
-use MyBot;
+use FindBin;
 
-use lib 'lib';
+use lib "$FindBin::Bin";
+use lib "$FindBin::Bin/lib";
+use MyBot;
 use AIAnts::Game;
 
 
-my $ver = $ARGV[0];        # verbose level
-my $in_fpath = $ARGV[1];   # input (game commands) file path
-my $log_fpath = $ARGV[2];  # log file path
+my $log_fpath = $ARGV[0] || undef;  # log file path
+my $ver = $ARGV[1] // 1;            # verbose level
+my $in_fpath = $ARGV[2];            # input (game commands) file path
 
 # make unbuffered
 select STDIN; $| = 1;

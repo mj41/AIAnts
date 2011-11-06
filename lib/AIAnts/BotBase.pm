@@ -63,8 +63,8 @@ sub setup {
 		viewradius2 => $config{viewradius2},
 		%{ $self->{map_args} }
 	);
-	$self->log( '', 1 ) if $self->{log};
-	#$self->log( $self->{m}->dump(1) );
+
+	$self->log( '', 1 ) if $self->{log}; # truncate log file
 }
 
 =head2 init_turn
@@ -75,6 +75,8 @@ Called before new turn params are parser and set_* methods called.
 
 sub init_turn {
 	my ( $self ) = @_;
+	use Data::Dumper;
+	#$self->log( Dumper($self->{my_ants}) );
 }
 
 =head2 set_water
@@ -108,17 +110,26 @@ Set map position to 'water', 'food' or 'corpse'.
 sub set_ant {
 	my ( $self, $x, $y, $owner ) = @_;
 
-	if ( $owner eq '0' ) {
-		$self->{ants}++;
-		my $ants = $self->{ants};
-		$self->{my_ants}{ $ants } = [ $x, $y ];
+	my $pos_str = "$x,$y";
 
-	} else {
-		$self->{my_ants}{ $owner } = [] unless exists $self->{my_ants}{ $owner };
-		push @{ $self->{my_ants}{ $owner } }, [ $x, $y ];
+	if ( $owner eq '0' ) {
+		return if exists $self->{my_ants}{$pos_str};
+		$self->{ants}++;
+		$self->{my_ants}{$pos_str} = [ $self->{ants}, $x+0, $y+0 ];
 	}
 
 	return 1;
+}
+
+=head2 my_ants
+
+Return my ants data.
+
+=cut
+
+sub my_ants {
+	my $self = shift;
+	return values %{ $self->{my_ants} };
 }
 
 =head2 set_hive
@@ -129,9 +140,20 @@ Called when 'hive' position parsed.
 
 sub set_hive {
 	my ( $self, $x, $y, $owner ) = @_;
+	return $self->{m}->set( 'hive', $x, $y, $owner );
 	return 1;
 }
 
+=head2 set_corpse
+
+Called when 'corpse' (dead ant) position parsed.
+
+=cut
+
+sub set_corpse {
+	my ( $self, $x, $y, $owner ) = @_;
+	return 1;
+}
 
 =head2 orders
 
@@ -143,10 +165,6 @@ Return array of array refs with commands (ants movements).
 
 sub orders {
     my $self = shift;
-
-	#use Data::Dumper;  print Dumper( $self->{my_ants} );
-
-	# ( [ 1, 1, 'W' ] );
 	return ();
 }
 
@@ -172,6 +190,7 @@ Append string to log file.
 
 sub log {
 	my ( $self, $str, $truncate ) = @_;
+	return 0 unless $self->{log};
 
 	open(my $fh, '>>:utf8', $self->{log_fpath} )
 		|| croak "Can't open '$self->{log_fpath}' for write: $!\n";

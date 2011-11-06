@@ -45,6 +45,7 @@ is_deeply(
 	[
 		[ 'go' ],
 		[ 'go' ],
+		[ 'go' ],
 	],
 	'output'
 );

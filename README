@@ -1,8 +1,6 @@
-Perl base modules for Google AI Challenge 2011 (AI Ants Game)
+Perl base modules for Google AI Challenge 2011 (AI Ants Game).
 
-Not useful yet.
-
-See test directory.
+See 'bots/' and 't/' directories.
 
 * http://aichallenge.org/
 * http://aichallenge.org/language_profile.php?language=Perl

@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use Carp qw(carp croak);
 
-use lib 'lib';
 use base 'AIAnts::BotBase';
 
 =head1 NAME
@@ -12,6 +11,40 @@ use base 'AIAnts::BotBase';
 MyBot for L<AIAnts> game.
 
 =head1 SYNOPSIS
+
+Google AI Challenge 2011 "AI Ants" game Perl bot.
+
+=head1 METHODS
+
+=head2 setup
+
+Setup.
+
+=cut
+
+sub setup {
+	my $self = shift;
+	$self->SUPER::setup( @_ );
+	$self->{br} = {};
+}
+
+=head2 orders
+
+Make orders.
+
+=cut
+
+sub orders {
+	my $self = shift;
+
+	my @orders = ();
+	foreach my $ant_data ( $self->my_ants ) {
+		my ( $ant_num, $x, $y ) = @$ant_data;
+		#push @orders, [ $x, $y, 'S' ];
+
+	}
+	return @orders;
+}
 
 =head1 AUTHOR
 

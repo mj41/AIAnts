@@ -23,7 +23,7 @@ Constructor.
 
 sub new {
     my ( $class, %args ) = @_;
-    
+
     my $self = {
     	mx => $args{rows}-1,
     	my => $args{cols}-1,
@@ -53,7 +53,7 @@ sub new {
 		hive     => [ 'h', chr(0x27D0)  ],
 		ant      => [ 'a', chr(0x10312) ],
 	};
-	
+
     return $self;
 }
 
@@ -72,6 +72,9 @@ sub init_map {
 			$self->{m}[$x][$y] = 0;
 		}
 	}
+
+	$self->{m_hive} = {};
+	$self->{m_ant} = {};
 	return 1;
 }
 
@@ -86,7 +89,7 @@ sub init_viewradius {
 
 	my $vm_distance = int sqrt( $vr2 );
 	return 1 unless $vm_distance;
-	
+
 	my $vr_map = [
 		[0,0]
 	];
@@ -118,7 +121,7 @@ Return map dumped to ascii/utf8.
 
 sub dump {
 	my ( $self, $normal, $view ) = @_;
-	
+
 	my $out = '';
 	my ( $x, $y );
 	foreach $x ( 0..$self->{mx} ) {
@@ -175,8 +178,12 @@ Set position on map to concrete type.
 =cut
 
 sub set {
-	my ( $self, $type, $x, $y ) = @_;
+	my ( $self, $type, $x, $y, $owner ) = @_;
 	$self->{m}[$x][$y] |= $self->{o_bits}{ $type };
+
+	if ( defined $owner ) {
+		$self->{"m_".$type}{$x}{$y} = $owner;
+	}
 	return 1;
 }
 
@@ -190,7 +197,7 @@ Sum two positions A and B to get x, y on map (no behind map borders).
 
 sub pos_plus {
 	my ( $self, $Ax, $Ay, $Bx, $By ) = @_;
-	
+
 	my $x = $Ax + $Bx;
 	if ( $x < 0 ) {
 		$x = $self->{mx} + $x + 1;
@@ -212,7 +219,7 @@ sub pos_plus {
 
 Set positions inside ant viewradius around provided position to 'explored'.
 
- $map->set_view( 1, 2 ); #  set explored around ant on [1,2] 
+ $map->set_view( 1, 2 ); #  set explored around ant on [1,2]
 
 =cut
 
@@ -236,7 +243,7 @@ sub set_view {
    |x
    |
    V
-  
+
  Directions:
      N
    W * E
@@ -264,7 +271,7 @@ Michal Jurosz, mj@mj41.cz
 
 =head1 LICENSE
 
-This is free software; you can redistribute it and/or modify it under the same 
+This is free software; you can redistribute it and/or modify it under the same
 terms as the Perl 5 programming language system itself.
 
 =cut
