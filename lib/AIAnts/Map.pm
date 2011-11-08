@@ -136,14 +136,18 @@ Return map dumped to ascii/utf8.
 =cut
 
 sub dump {
-	my ( $self, $normal, $view ) = @_;
+	my ( $self, $normal, $view, %force_opts ) = @_;
+
+	my $utf8 = $force_opts{o_utf8} // $self->{o_utf8};
+	my $char_pos = ( $utf8 ) ? 1 : 0;
+
+	my $line_prefix = $force_opts{o_line_prefix} // $self->{o_line_prefix};
 
 	my $out = '';
 	my ( $x, $y );
 	foreach $x ( 0..$self->{mx} ) {
-		$out .= $self->{o_line_prefix};
+		$out .= $line_prefix;
 		if ( $normal ) {
-			my $char_pos = ( $self->{o_utf8} ) ? 1 : 0;
 			my $o_bits = $self->{o_bits};
 			my $o_chars = $self->{o_chars};
 			foreach $y ( 0..$self->{my} ) {
