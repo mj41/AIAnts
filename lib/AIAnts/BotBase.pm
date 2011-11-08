@@ -61,6 +61,8 @@ sub setup {
 		cols => $config{cols},
 		rows => $config{rows},
 		viewradius2 => $config{viewradius2},
+		attackradius2 => $config{attackradius2},
+		spawnradius2 => $config{spawnradius2},
 		%{ $self->{map_args} }
 	);
 

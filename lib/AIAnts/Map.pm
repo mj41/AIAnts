@@ -7,7 +7,7 @@ use utf8;
 
 =head1 NAME
 
-AI::Game
+AIAnts::Map
 
 =head1 SYNOPSIS
 
@@ -32,7 +32,9 @@ sub new {
     bless $self, $class;
 
 	$self->init_map();
-    $self->init_viewradius( $args{viewradius2} // 16 );
+	$self->init_radius( 'vr', $args{viewradius2} );
+	$self->init_radius( 'ar', $args{attackradius2} );
+	$self->init_radius( 'sr', $args{spawnradius2} );
 
 	$self->{o_bits} = {
 		unknown  => 0,    #  0
@@ -78,35 +80,49 @@ sub init_map {
 	return 1;
 }
 
-=head2 init_viewradius
+=head2 get_radius_cache
 
 Init helper parameter for computation with viewradius.
 
 =cut
 
-sub init_viewradius {
-	my ( $self, $vr2 ) = @_;
+sub get_radius_cache {
+    my ( $self, $radius2 ) = @_;
 
-	my $vm_distance = int sqrt( $vr2 );
+	my $vm_distance = int sqrt( $radius2 );
 	return 1 unless $vm_distance;
 
-	my $vr_map = [
+	my $r_map = [
 		[0,0]
 	];
 	foreach my $x ( 0..$vm_distance ) {
 		foreach my $y ( 0..$vm_distance ) {
 			next if $x == 0 && $y == 0;
-			if ( ($x*$x + $y*$y) < $vr2 ) {
-				push @$vr_map, [ +$x, +$y ];
-				push @$vr_map, [ -$x, +$y ];
-				push @$vr_map, [ +$x, -$y ];
-				push @$vr_map, [ -$x, -$y ];
+			if ( ($x*$x + $y*$y) < $radius2 ) {
+				push @$r_map, [ +$x, +$y ];
+				push @$r_map, [ -$x, +$y ];
+				push @$r_map, [ +$x, -$y ];
+				push @$r_map, [ -$x, -$y ];
 			}
 		}
 	}
 
-	$self->{vr2} = $vr2;
-	$self->{vr_map} = $vr_map;
+    return $r_map;
+}
+
+=head2 init_radius
+
+Init helper parameter for computation with radius.
+
+=cut
+
+sub init_radius {
+	my ( $self, $radius_shortcut, $radius2 ) = @_;
+
+	die "No radius2 defined for shortcut '$radius_shortcut'.\n" unless defined $radius2;
+	my $r_map = $self->get_radius_cache( $radius2 );
+	$self->{$radius_shortcut}{r2} = $radius2;
+	$self->{$radius_shortcut}{map} = $r_map;
 	return 1;
 }
 
