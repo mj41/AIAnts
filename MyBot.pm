@@ -23,9 +23,9 @@ Setup.
 =cut
 
 sub setup {
-	my $self = shift;
-	$self->SUPER::setup( @_ );
-	$self->{br} = {};
+    my $self = shift;
+    $self->SUPER::setup( @_ );
+    $self->{br} = {};
 }
 
 =head2 orders
@@ -35,15 +35,15 @@ Make orders.
 =cut
 
 sub orders {
-	my $self = shift;
+    my $self = shift;
 
-	my @orders = ();
-	foreach my $ant_data ( $self->my_ants ) {
-		my ( $ant_num, $x, $y ) = @$ant_data;
-		push @orders, [ $x, $y, 's' ];
+    my @orders = ();
+    foreach my $ant_data ( $self->my_ants ) {
+        my ( $ant_num, $x, $y ) = @$ant_data;
+        push @orders, [ $x, $y, 's' ];
 
-	}
-	return @orders;
+    }
+    return @orders;
 }
 
 =head1 AUTHOR

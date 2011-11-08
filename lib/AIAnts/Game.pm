@@ -21,19 +21,19 @@ Constructor.
 =cut
 
 sub new {
-	my ( $class, %args ) = @_;
+    my ( $class, %args ) = @_;
 
-	my $self = {
-		corpses => undef,
-		ants => undef,
-		config => undef,
+    my $self = {
+        corpses => undef,
+        ants => undef,
+        config => undef,
 
-	};
-	bless $self, $class;
+    };
+    bless $self, $class;
 
-	$self->{fh} = $self->get_input_fh( %args );
-	$self->{bot} = $args{bot};
-	return $self;
+    $self->{fh} = $self->get_input_fh( %args );
+    $self->{bot} = $args{bot};
+    return $self;
 }
 
 
@@ -44,18 +44,18 @@ Return initialized file handle for input reading.
 =cut
 
 sub get_input_fh {
-	my ( $self, %args ) = @_;
+    my ( $self, %args ) = @_;
 
-	return $args{fh} if defined $args{fh};
+    return $args{fh} if defined $args{fh};
 
-	if ( $args{in_fpath} ) {
-		my $fh;
-		open($fh, '<', $args{in_fpath} )
-			|| croak "Can't open '$args{in_fpath}' for read: $!\n";
-		return $fh;
-	}
+    if ( $args{in_fpath} ) {
+        my $fh;
+        open($fh, '<', $args{in_fpath} )
+            || croak "Can't open '$args{in_fpath}' for read: $!\n";
+        return $fh;
+    }
 
-	return \*STDIN;
+    return \*STDIN;
 }
 
 =head2 get_next_input_line
@@ -65,12 +65,12 @@ Get next chomped line from filehandle.
 =cut
 
 sub get_next_input_line {
-	my $self = shift;
+    my $self = shift;
 
-	my $fh = $self->{fh};
-	my $line = <$fh>;
-	chomp( $line );
-	return $line;
+    my $fh = $self->{fh};
+    my $line = <$fh>;
+    chomp( $line );
+    return $line;
 }
 
 =head2 bot
@@ -80,8 +80,8 @@ Return bot object associated with this game.
 =cut
 
 sub bot {
-	my $self = shift;
-	return $self->{bot};
+    my $self = shift;
+    return $self->{bot};
 }
 
 
@@ -92,13 +92,13 @@ Game processing loop.
 =cut
 
 sub run {
-	my $self = shift;
+    my $self = shift;
 
-	$self->do_setup();
-	while (1) {
-		last unless $self->do_turn();
-	}
-	$self->game_over();
+    $self->do_setup();
+    while (1) {
+        last unless $self->do_turn();
+    }
+    $self->game_over();
 }
 
 =head2 do_setup
@@ -108,10 +108,10 @@ Do all setup steps - parse_setup, setup and let game know you can begin.
 =cut
 
 sub do_setup {
-	my $self = shift;
-	$self->parse_setup();
-	$self->setup();
-	$self->my_say('go');
+    my $self = shift;
+    $self->parse_setup();
+    $self->setup();
+    $self->my_say('go');
 }
 
 =head2 parse_setup
@@ -121,32 +121,32 @@ Game setup data parsing.
 =cut
 
 sub parse_setup {
-	my $self = shift;
+    my $self = shift;
 
-	my %contig_opts = (
-		loadtime => 1,
-		turntime => 1,
-		rows => 1,
-		cols => 1,
-		turns => 1,
-		viewradius2 => 1,
-		attackradius2 => 1,
-		spawnradius2 => 1,
-		player_seed => 1,
-	);
+    my %contig_opts = (
+        loadtime => 1,
+        turntime => 1,
+        rows => 1,
+        cols => 1,
+        turns => 1,
+        viewradius2 => 1,
+        attackradius2 => 1,
+        spawnradius2 => 1,
+        player_seed => 1,
+    );
 
-	while (1) {
-		my $line = $self->get_next_input_line();
-		next unless $line;
-		last if $line eq 'ready';
+    while (1) {
+        my $line = $self->get_next_input_line();
+        next unless $line;
+        last if $line eq 'ready';
 
-		my ( $key, $value ) = split( /\s/, $line );
-		if ( exists $contig_opts{$key} ) {
-			$self->{config}{$key} = $value;
-		}
-	}
+        my ( $key, $value ) = split( /\s/, $line );
+        if ( exists $contig_opts{$key} ) {
+            $self->{config}{$key} = $value;
+        }
+    }
 
-	return 1;
+    return 1;
 }
 
 =head2 config
@@ -156,9 +156,9 @@ Return game parameters.
 =cut
 
 sub config {
-	my $self = shift;
-	return undef unless $self->{config};
-	return %{ $self->{config} };
+    my $self = shift;
+    return undef unless $self->{config};
+    return %{ $self->{config} };
 }
 
 =head2 setup
@@ -168,8 +168,8 @@ Call setup on your bot.
 =cut
 
 sub setup {
-	my $self = shift;
-	$self->{bot}->setup( %{ $self->{config} } );
+    my $self = shift;
+    $self->{bot}->setup( %{ $self->{config} } );
 }
 
 =head2 do_turn
@@ -179,13 +179,13 @@ Do one turn init_turn, parse_turn, turn. Return 0 if it was the last turn 1 othe
 =cut
 
 sub do_turn {
-	my $self = shift;
+    my $self = shift;
 
-	$self->init_turn();
-	my $last_cmd = $self->parse_turn();
-	return 0 if $last_cmd eq 'end';
-	$self->turn();
-	return 1;
+    $self->init_turn();
+    my $last_cmd = $self->parse_turn();
+    return 0 if $last_cmd eq 'end';
+    $self->turn();
+    return 1;
 }
 
 =head2 init_turn
@@ -195,8 +195,8 @@ Call init_turn on your bot.
 =cut
 
 sub init_turn {
-	my $self = shift;
-	$self->{bot}->init_turn();
+    my $self = shift;
+    $self->{bot}->init_turn();
 }
 
 =head2 parse_turn
@@ -206,39 +206,39 @@ Parse game turn.
 =cut
 
 sub parse_turn {
-	my $self = shift;
+    my $self = shift;
 
-	my $line;
-	while (1) {
-		$line = $self->get_next_input_line();
-		next unless $line;
-		last if $line eq 'go' || $line eq 'end';
+    my $line;
+    while (1) {
+        $line = $self->get_next_input_line();
+        next unless $line;
+        last if $line eq 'go' || $line eq 'end';
 
-		my ( $cmd, $x, $y, $owner ) = split( /\s/, $line );
+        my ( $cmd, $x, $y, $owner ) = split( /\s/, $line );
 
-		# water
-		if ( $cmd eq 'w' ) {
-			$self->{bot}->set_water( $x, $y );
+        # water
+        if ( $cmd eq 'w' ) {
+            $self->{bot}->set_water( $x, $y );
 
-		# food
-		} elsif ( $cmd eq 'f' ) {
-			$self->{bot}->set_food( $x, $y );
+        # food
+        } elsif ( $cmd eq 'f' ) {
+            $self->{bot}->set_food( $x, $y );
 
-		# ant
-		} elsif ( $cmd eq 'a' ) {
-			$self->{bot}->set_ant( $x, $y, $owner );
+        # ant
+        } elsif ( $cmd eq 'a' ) {
+            $self->{bot}->set_ant( $x, $y, $owner );
 
-		# hive (ant hill)
-		} elsif ( $cmd eq 'h' ) {
-			$self->{bot}->set_hive( $x, $y, $owner );
+        # hive (ant hill)
+        } elsif ( $cmd eq 'h' ) {
+            $self->{bot}->set_hive( $x, $y, $owner );
 
-		# dead ant (corpse)
-		} elsif ( $cmd eq 'd' ) {
-			$self->{bot}->set_corpse( $x, $y, $owner );
-		}
-	}
+        # dead ant (corpse)
+        } elsif ( $cmd eq 'd' ) {
+            $self->{bot}->set_corpse( $x, $y, $owner );
+        }
+    }
 
-	return $line;
+    return $line;
 }
 
 =head2 turn
@@ -248,13 +248,13 @@ This method is called each turn to generate orders. Call orders method on bot ob
 =cut
 
 sub turn {
-	my $self = shift;
-	my @orders = $self->{bot}->orders();
-	foreach my $order ( @orders ) {
-		$self->issue_order( @$order );
-	}
-	$self->my_say('go');
-	return 1;
+    my $self = shift;
+    my @orders = $self->{bot}->orders();
+    foreach my $order ( @orders ) {
+        $self->issue_order( @$order );
+    }
+    $self->my_say('go');
+    return 1;
 }
 
 =head2 issue_order
@@ -264,10 +264,10 @@ Method to issue an order to the server.
 =cut
 
 sub issue_order {
-	my ( $self, $x, $y, $direction ) = @_;
-	$self->my_say(
-		sprintf( 'o %d %d %s', $x, $y, $direction )
-	);
+    my ( $self, $x, $y, $direction ) = @_;
+    $self->my_say(
+        sprintf( 'o %d %d %s', $x, $y, $direction )
+    );
 }
 
 =head2 my_say
@@ -277,9 +277,9 @@ Method to print new line. Overwitten in tests.
 =cut
 
 sub my_say {
-	shift;
-	print @_;
-	print "\n";
+    shift;
+    print @_;
+    print "\n";
 }
 
 =head2 game_over
@@ -291,15 +291,15 @@ It is called after the initial configuration data is sent from the server.
 =cut
 
 sub game_over {
-	my $self = shift;
-	$self->{bot}->game_over();
+    my $self = shift;
+    $self->{bot}->game_over();
 
-	# close input file
-	if ( $self->{in_fpath} ) {
-		$self->{fh}->close();
-	}
+    # close input file
+    if ( $self->{in_fpath} ) {
+        $self->{fh}->close();
+    }
 
-	return 1;
+    return 1;
 }
 
 

@@ -25,36 +25,36 @@ sub new {
     my ( $class, %args ) = @_;
 
     my $self = {
-    	mx => $args{rows}-1,
-    	my => $args{cols}-1,
-    	m => [],
+        mx => $args{rows}-1,
+        my => $args{cols}-1,
+        m => [],
     };
     bless $self, $class;
 
-	$self->init_map();
-	$self->init_radius( 'vr', $args{viewradius2} );
-	$self->init_radius( 'ar', $args{attackradius2} );
-	$self->init_radius( 'sr', $args{spawnradius2} );
+    $self->init_map();
+    $self->init_radius( 'vr', $args{viewradius2} );
+    $self->init_radius( 'ar', $args{attackradius2} );
+    $self->init_radius( 'sr', $args{spawnradius2} );
 
-	$self->{o_bits} = {
-		unknown  => 0,    #  0
-		explored => 2**0, #  1
-		water    => 2**1, #  2
-		food     => 2**2, #  4
-		hive     => 2**3, #  8
-		ant      => 2**4, # 16
-	};
+    $self->{o_bits} = {
+        unknown  => 0,    #  0
+        explored => 2**0, #  1
+        water    => 2**1, #  2
+        food     => 2**2, #  4
+        hive     => 2**3, #  8
+        ant      => 2**4, # 16
+    };
 
-	$self->{o_utf8} = $args{o_utf8} // 1;
-	$self->{o_line_prefix} = $args{o_line_prefix} // '';
-	$self->{o_chars} = {
-		unknown  => [ '.', chr(0x00B7)  ],
-		explored => [ 'o', chr(0x2022)  ],
-		water    => [ '%', chr(0x25A0)  ],
-		food     => [ 'f', chr(0x2740)  ],
-		hive     => [ 'h', chr(0x27D0)  ],
-		ant      => [ 'a', chr(0x10312) ],
-	};
+    $self->{o_utf8} = $args{o_utf8} // 1;
+    $self->{o_line_prefix} = $args{o_line_prefix} // '';
+    $self->{o_chars} = {
+        unknown  => [ '.', chr(0x00B7)  ],
+        explored => [ 'o', chr(0x2022)  ],
+        water    => [ '%', chr(0x25A0)  ],
+        food     => [ 'f', chr(0x2740)  ],
+        hive     => [ 'h', chr(0x27D0)  ],
+        ant      => [ 'a', chr(0x10312) ],
+    };
 
     return $self;
 }
@@ -66,18 +66,18 @@ Initialize map to zeros.
 =cut
 
 sub init_map {
-	my ( $self ) = @_;
+    my ( $self ) = @_;
 
-	foreach my $x ( 0..$self->{mx} ) {
-		# todo - optimize - better syntax?
-		foreach my $y ( 0..$self->{my} ) {
-			$self->{m}[$x][$y] = 0;
-		}
-	}
+    foreach my $x ( 0..$self->{mx} ) {
+        # todo - optimize - better syntax?
+        foreach my $y ( 0..$self->{my} ) {
+            $self->{m}[$x][$y] = 0;
+        }
+    }
 
-	$self->{m_hive} = {};
-	$self->{m_ant} = {};
-	return 1;
+    $self->{m_hive} = {};
+    $self->{m_ant} = {};
+    return 1;
 }
 
 =head2 get_radius_cache
@@ -89,24 +89,24 @@ Init helper parameter for computation with viewradius.
 sub get_radius_cache {
     my ( $self, $radius2 ) = @_;
 
-	my $vm_distance = int sqrt( $radius2 );
+    my $vm_distance = int sqrt( $radius2 );
 
-	my $r_map = [
-		[0,0]
-	];
-	return $r_map unless $vm_distance;
+    my $r_map = [
+        [0,0]
+    ];
+    return $r_map unless $vm_distance;
 
-	foreach my $x ( 0..$vm_distance ) {
-		foreach my $y ( 0..$vm_distance ) {
-			next if $x == 0 && $y == 0;
-			if ( ($x*$x + $y*$y) < $radius2 ) {
-				push @$r_map, [ +$x, +$y ];
-				push @$r_map, [ -$x, +$y ];
-				push @$r_map, [ +$x, -$y ];
-				push @$r_map, [ -$x, -$y ];
-			}
-		}
-	}
+    foreach my $x ( 0..$vm_distance ) {
+        foreach my $y ( 0..$vm_distance ) {
+            next if $x == 0 && $y == 0;
+            if ( ($x*$x + $y*$y) < $radius2 ) {
+                push @$r_map, [ +$x, +$y ];
+                push @$r_map, [ -$x, +$y ];
+                push @$r_map, [ +$x, -$y ];
+                push @$r_map, [ -$x, -$y ];
+            }
+        }
+    }
 
     return $r_map;
 }
@@ -118,14 +118,14 @@ Init helper parameter for computation with radius.
 =cut
 
 sub init_radius {
-	my ( $self, $radius_shortcut, $radius2 ) = @_;
+    my ( $self, $radius_shortcut, $radius2 ) = @_;
 
-	die "No radius2 defined for shortcut '$radius_shortcut'.\n" unless defined $radius2;
+    die "No radius2 defined for shortcut '$radius_shortcut'.\n" unless defined $radius2;
 
-	my $r_map = $self->get_radius_cache( $radius2 );
-	$self->{$radius_shortcut}{r2} = $radius2;
-	$self->{$radius_shortcut}{map} = $r_map;
-	return 1;
+    my $r_map = $self->get_radius_cache( $radius2 );
+    $self->{$radius_shortcut}{r2} = $radius2;
+    $self->{$radius_shortcut}{map} = $r_map;
+    return 1;
 }
 
 =head2 new
@@ -138,62 +138,62 @@ Return map dumped to ascii/utf8.
 =cut
 
 sub dump {
-	my ( $self, $normal, $view, %force_opts ) = @_;
+    my ( $self, $normal, $view, %force_opts ) = @_;
 
-	my $utf8 = $force_opts{o_utf8} // $self->{o_utf8};
-	my $char_pos = ( $utf8 ) ? 1 : 0;
-	my $show_explored = $force_opts{show_explored} // 1;
+    my $utf8 = $force_opts{o_utf8} // $self->{o_utf8};
+    my $char_pos = ( $utf8 ) ? 1 : 0;
+    my $show_explored = $force_opts{show_explored} // 1;
 
-	my $line_prefix = $force_opts{o_line_prefix} // $self->{o_line_prefix};
+    my $line_prefix = $force_opts{o_line_prefix} // $self->{o_line_prefix};
 
-	my $out = '';
-	my ( $x, $y );
-	foreach $x ( 0..$self->{mx} ) {
-		$out .= $line_prefix;
-		if ( $normal ) {
-			my $o_bits = $self->{o_bits};
-			my $o_chars = $self->{o_chars};
-			foreach $y ( 0..$self->{my} ) {
-				my $val = $self->{m}[$x][$y];
+    my $out = '';
+    my ( $x, $y );
+    foreach $x ( 0..$self->{mx} ) {
+        $out .= $line_prefix;
+        if ( $normal ) {
+            my $o_bits = $self->{o_bits};
+            my $o_chars = $self->{o_chars};
+            foreach $y ( 0..$self->{my} ) {
+                my $val = $self->{m}[$x][$y];
 
-				$out .= ' ' if $y;
-				if ( $val & $o_bits->{ant} ) {
-					$out .= $o_chars->{ant}[$char_pos];
+                $out .= ' ' if $y;
+                if ( $val & $o_bits->{ant} ) {
+                    $out .= $o_chars->{ant}[$char_pos];
 
-				} elsif ( $val & $o_bits->{hive} ) {
-					$out .= $o_chars->{hive}[$char_pos];
+                } elsif ( $val & $o_bits->{hive} ) {
+                    $out .= $o_chars->{hive}[$char_pos];
 
-				} elsif ( $val & $o_bits->{food} ) {
-					$out .= $o_chars->{food}[$char_pos];
+                } elsif ( $val & $o_bits->{food} ) {
+                    $out .= $o_chars->{food}[$char_pos];
 
-				} elsif ( $val & $o_bits->{water} ) {
-					$out .= $o_chars->{water}[$char_pos];
+                } elsif ( $val & $o_bits->{water} ) {
+                    $out .= $o_chars->{water}[$char_pos];
 
-				} elsif ( $val & $o_bits->{explored} ) {
-					if ( $show_explored ) {
-						$out .= $o_chars->{explored}[$char_pos];
-					} else {
-						$out .= $o_chars->{unknown}[$char_pos];
-					}
+                } elsif ( $val & $o_bits->{explored} ) {
+                    if ( $show_explored ) {
+                        $out .= $o_chars->{explored}[$char_pos];
+                    } else {
+                        $out .= $o_chars->{unknown}[$char_pos];
+                    }
 
-				} else {
-					$out .= $o_chars->{unknown}[$char_pos];
-				}
-			}
-		}
+                } else {
+                    $out .= $o_chars->{unknown}[$char_pos];
+                }
+            }
+        }
 
-		if ( $view ) {
-			$out .= '   ' if $normal;
-			foreach $y ( 0..$self->{my} ) {
-				my $val = $self->{m}[$x][$y];
-				$out .= ' ' if $y;
-				$out .= sprintf( "%02d", $self->{m}[$x][$y] );
-			}
-		}
+        if ( $view ) {
+            $out .= '   ' if $normal;
+            foreach $y ( 0..$self->{my} ) {
+                my $val = $self->{m}[$x][$y];
+                $out .= ' ' if $y;
+                $out .= sprintf( "%02d", $self->{m}[$x][$y] );
+            }
+        }
 
-		$out .= "\n";
-	}
-	return $out;
+        $out .= "\n";
+    }
+    return $out;
 }
 
 =head2 set
@@ -205,13 +205,13 @@ Set position on map to concrete type.
 =cut
 
 sub set {
-	my ( $self, $type, $x, $y, $owner ) = @_;
-	$self->{m}[$x][$y] |= $self->{o_bits}{ $type };
+    my ( $self, $type, $x, $y, $owner ) = @_;
+    $self->{m}[$x][$y] |= $self->{o_bits}{ $type };
 
-	if ( defined $owner ) {
-		$self->{"m_".$type}{$x}{$y} = $owner;
-	}
-	return 1;
+    if ( defined $owner ) {
+        $self->{"m_".$type}{$x}{$y} = $owner;
+    }
+    return 1;
 }
 
 =head2 pos_plus
@@ -223,23 +223,23 @@ Sum positions A and distance D to get x, y on map (no behind map borders).
 =cut
 
 sub pos_plus {
-	my ( $self, $Ax, $Ay, $Dx, $Dy ) = @_;
+    my ( $self, $Ax, $Ay, $Dx, $Dy ) = @_;
 
-	my $x = $Ax + $Dx;
-	if ( $x < 0 ) {
-		$x = $self->{mx} + $x + 1;
-	} elsif ( $x > $self->{mx} ) {
-		$x = $x - $self->{mx} - 1;
-	}
+    my $x = $Ax + $Dx;
+    if ( $x < 0 ) {
+        $x = $self->{mx} + $x + 1;
+    } elsif ( $x > $self->{mx} ) {
+        $x = $x - $self->{mx} - 1;
+    }
 
-	my $y = $Ay + $Dy;
-	if ( $y < 0 ) {
-		$y = $self->{my} + $y + 1;
-	} elsif ( $y > $self->{my} ) {
-		$y = $y - $self->{my} - 1;
-	}
+    my $y = $Ay + $Dy;
+    if ( $y < 0 ) {
+        $y = $self->{my} + $y + 1;
+    } elsif ( $y > $self->{my} ) {
+        $y = $y - $self->{my} - 1;
+    }
 
-	return ( $x, $y );
+    return ( $x, $y );
 }
 
 =head2 set_explored
@@ -251,16 +251,16 @@ Set positions inside ant viewradius around provided position to 'explored'.
 =cut
 
 sub set_explored {
-	my ( $self, $bot_x, $bot_y ) = @_;
+    my ( $self, $bot_x, $bot_y ) = @_;
 
-	# todo - optimize when moving
+    # todo - optimize when moving
 
-	my $explored_bit = $self->{o_bits}{explored};
-	foreach my $pos ( @{ $self->{vr}{map} } ) {
-		my ( $x, $y ) = $self->pos_plus( $bot_x, $bot_y, $pos->[0], $pos->[1] );
-		next if $self->{m}[$x][$y] & $explored_bit;
-		$self->{m}[$x][$y] |= $explored_bit;
-	}
+    my $explored_bit = $self->{o_bits}{explored};
+    foreach my $pos ( @{ $self->{vr}{map} } ) {
+        my ( $x, $y ) = $self->pos_plus( $bot_x, $bot_y, $pos->[0], $pos->[1] );
+        next if $self->{m}[$x][$y] & $explored_bit;
+        $self->{m}[$x][$y] |= $explored_bit;
+    }
 }
 
 =head1 Some notes

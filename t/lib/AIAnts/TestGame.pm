@@ -23,7 +23,7 @@ Do not print anything.
 =cut
 
 sub my_say {
-	return 1;
+    return 1;
 }
 
 =head2 set_input
@@ -33,11 +33,11 @@ Mock next input lines from string (game commands separated by new line).
 =cut
 
 sub set_input {
-	my ( $self, $input ) = @_;
-	$input =~ s/^\n//;
-	$input =~ s/\n$//;
-	$self->{__t_input_lines} = [ split("\n",$input) ];
-	return 1;
+    my ( $self, $input ) = @_;
+    $input =~ s/^\n//;
+    $input =~ s/\n$//;
+    $self->{__t_input_lines} = [ split("\n",$input) ];
+    return 1;
 }
 
 =head2 get_next_input_line
@@ -47,13 +47,13 @@ Mock get_next_input_line method.
 =cut
 
 sub get_next_input_line {
-	my $self = shift;
+    my $self = shift;
 
-	my $line = shift @{ $self->{__t_input_lines} };
-	return 'go' unless $line;
-	$line =~ s/^\s+//;
-	$line =~ s/\s+$//;
-	return $line;
+    my $line = shift @{ $self->{__t_input_lines} };
+    return 'go' unless $line;
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+    return $line;
 };
 
 

@@ -9,20 +9,20 @@ use AIAnts::Map;
 my $mp;
 
 $mp = new AIAnts::Map(
-	rows => 2,  # x (vertical)   m_x+1
-	cols => 3,  # y (horizontal) m_y+1
-	viewradius2 => 4,
-	attackradius2 => 3,
-	spawnradius2 => 2,
+    rows => 2,  # x (vertical)   m_x+1
+    cols => 3,  # y (horizontal) m_y+1
+    viewradius2 => 4,
+    attackradius2 => 3,
+    spawnradius2 => 2,
 );
 is( ref $mp, 'AIAnts::Map', 'new' );
 
 my $dp = $mp->dump(0,1);
 is(
-	$dp,
-	  "00 00 00\n"    # ---> y  [0,0] [0,1] [0,2]
-	. "00 00 00\n",   # |       [1,0] [1,1] [1,2]
-	'dump'            # v
+    $dp,
+      "00 00 00\n"    # ---> y  [0,0] [0,1] [0,2]
+    . "00 00 00\n",   # |       [1,0] [1,1] [1,2]
+    'dump'            # v
 );                    # x
 
 my ( $x, $y );

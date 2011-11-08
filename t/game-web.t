@@ -8,13 +8,13 @@ use AIAnts::BotBase;
 use AIAnts::Game;
 
 my $bot = AIAnts::BotBase->new(
-	map => {
-		o_utf8 => 0,
-	},
+    map => {
+        o_utf8 => 0,
+    },
 );
 my %game_conf = (
-	bot => $bot,
-	in_fpath => 't/data/game-web.txt',
+    bot => $bot,
+    in_fpath => 't/data/game-web.txt',
 );
 
 no warnings 'redefine';
