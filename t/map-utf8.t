@@ -18,14 +18,14 @@ my $mp = new AIAnts::Map(
 is( ref $mp, 'AIAnts::Map', 'new' );
 binmode(STDOUT, ":utf8");
 
-$mp->set_view( 2, 2 );
+$mp->set_explored( 2, 2 );
 
 $mp->set( 'food', 5, 5 );
 
 $mp->set( 'water', 5, 4 );
 $mp->set( 'water', 5, 3 );
 
-$mp->set_view( 3, 3 );
+$mp->set_explored( 3, 3 );
 
 print $mp->dump(1);
 

@@ -1,21 +1,22 @@
 turn 0
-loadtime 3000  
-turntime 1000  
-rows 20  
-cols 20  
-turns 500  
-viewradius2 55  
-attackradius2 5  
-spawnradius2 1  
+loadtime 3000
+turntime 1000
+rows 20
+cols 20
+turns 500
+viewradius2 55
+attackradius2 5
+spawnradius2 1
 player_seed 42
 ready
 
 turn 1
 f 6 5
 w 7 6
-a 7 9 1 
+a 7 9 1
 a 10 8 0
 a 10 9 0
+h 2 2 0
 h 7 12 1
 go
 
@@ -23,7 +24,7 @@ end
 players 2
 score 1 0
 f 6 5
-d 7 8 1 
+d 7 8 1
 a 9 8 0
 a 9 9 0
 go

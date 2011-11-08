@@ -58,6 +58,20 @@ sub get_input_fh {
     return \*STDIN;
 }
 
+=head2 get_next_input_line
+
+Get next chomped line from filehandle.
+
+=cut
+
+sub get_next_input_line {
+	my $self = shift;
+
+	my $fh = $self->{fh};
+	my $line = <$fh>;
+	chomp( $line );
+	return $line;
+}
 
 =head2 bot
 
@@ -80,18 +94,24 @@ Game processing loop.
 sub run {
     my $self = shift;
 
+	$self->do_setup();
+	while (1) {
+		last unless $self->do_turn();
+	}
+	$self->game_over();
+}
+
+=head2 do_setup
+
+Do all setup steps - parse_setup, setup and let game know you can begin.
+
+=cut
+
+sub do_setup {
+	my $self = shift;
 	$self->parse_setup();
 	$self->setup();
 	$self->my_say('go');
-
-	while (1) {
-		$self->init_turn();
-		my $last_cmd = $self->parse_turn();
-		last if $last_cmd eq 'end';
-		$self->turn();
-	}
-
-	$self->game_over();
 }
 
 =head2 parse_setup
@@ -115,10 +135,8 @@ sub parse_setup {
 		player_seed => 1,
     );
 
-    my $fh = $self->{fh};
     while (1) {
-        my $line = <$fh>;
-        chomp( $line );
+        my $line = $self->get_next_input_line();
         next unless $line;
         last if $line eq 'ready';
 
@@ -154,6 +172,22 @@ sub setup {
     $self->{bot}->setup( %{ $self->{config} } );
 }
 
+=head2 do_turn
+
+Do one turn init_turn, parse_turn, turn. Return 0 if it was the last turn 1 otherwise.
+
+=cut
+
+sub do_turn {
+	my $self = shift;
+
+	$self->init_turn();
+	my $last_cmd = $self->parse_turn();
+	return 0 if $last_cmd eq 'end';
+	$self->turn();
+	return 1;
+}
+
 =head2 init_turn
 
 Call init_turn on your bot.
@@ -174,13 +208,11 @@ Parse game turn.
 sub parse_turn {
     my $self = shift;
 
-    my $fh = $self->{fh};
     my $line;
     while (1) {
-        $line = <$fh>;
-        chomp( $line );
-        last if $line eq 'go' || $line eq 'end';
+        $line = $self->get_next_input_line();
         next unless $line;
+        last if $line eq 'go' || $line eq 'end';
 
         my ( $cmd, $x, $y, $owner ) = split( /\s/, $line );
 

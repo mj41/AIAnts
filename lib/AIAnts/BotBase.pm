@@ -114,10 +114,13 @@ sub set_ant {
 
 	my $pos_str = "$x,$y";
 
+	$self->{m}->set( 'ant', $x, $y, $owner );
+
 	if ( $owner eq '0' ) {
 		return if exists $self->{my_ants}{$pos_str};
 		$self->{ants}++;
 		$self->{my_ants}{$pos_str} = [ $self->{ants}, $x+0, $y+0 ];
+		$self->{m}->set_explored( $x, $y );
 	}
 
 	return 1;

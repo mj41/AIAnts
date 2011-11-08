@@ -35,7 +35,7 @@ my $dp = $game->bot->map->dump(1,0);
 is(
 	$dp, 
 	  ". % % .\n"
-	. ". . . .\n"
+	. ". a a .\n"
 	. ". f . .\n",
 	'map dump'
 );

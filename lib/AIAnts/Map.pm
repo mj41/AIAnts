@@ -90,11 +90,12 @@ sub get_radius_cache {
     my ( $self, $radius2 ) = @_;
 
 	my $vm_distance = int sqrt( $radius2 );
-	return 1 unless $vm_distance;
 
 	my $r_map = [
 		[0,0]
 	];
+	return $r_map unless $vm_distance;
+
 	foreach my $x ( 0..$vm_distance ) {
 		foreach my $y ( 0..$vm_distance ) {
 			next if $x == 0 && $y == 0;
@@ -120,6 +121,7 @@ sub init_radius {
 	my ( $self, $radius_shortcut, $radius2 ) = @_;
 
 	die "No radius2 defined for shortcut '$radius_shortcut'.\n" unless defined $radius2;
+
 	my $r_map = $self->get_radius_cache( $radius2 );
 	$self->{$radius_shortcut}{r2} = $radius2;
 	$self->{$radius_shortcut}{map} = $r_map;
@@ -140,6 +142,7 @@ sub dump {
 
 	my $utf8 = $force_opts{o_utf8} // $self->{o_utf8};
 	my $char_pos = ( $utf8 ) ? 1 : 0;
+	my $show_explored = $force_opts{show_explored} // 1;
 
 	my $line_prefix = $force_opts{o_line_prefix} // $self->{o_line_prefix};
 
@@ -167,7 +170,11 @@ sub dump {
 					$out .= $o_chars->{water}[$char_pos];
 
 				} elsif ( $val & $o_bits->{explored} ) {
-					$out .= $o_chars->{explored}[$char_pos];
+					if ( $show_explored ) {
+						$out .= $o_chars->{explored}[$char_pos];
+					} else {
+						$out .= $o_chars->{unknown}[$char_pos];
+					}
 
 				} else {
 					$out .= $o_chars->{unknown}[$char_pos];
@@ -235,15 +242,15 @@ sub pos_plus {
 	return ( $x, $y );
 }
 
-=head2 set_view
+=head2 set_explored
 
 Set positions inside ant viewradius around provided position to 'explored'.
 
- $map->set_view( 1, 2 ); #  set explored around ant on [1,2]
+ $map->set_explored( 1, 2 ); #  set explored around ant on [1,2]
 
 =cut
 
-sub set_view {
+sub set_explored {
 	my ( $self, $bot_x, $bot_y ) = @_;
 
 	# todo - optimize when moving
