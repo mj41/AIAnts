@@ -2,5 +2,11 @@ Perl base modules for Google AI Challenge 2011 (AI Ants Game).
 
 See 'bots/' and 't/' directories.
 
+Join #perl-ai channel on irc.freenode.org
+* irc://irc.freenode.net/perl-ai
+* http://webchat.freenode.net/?channels=perl-ai
+
+Links
 * http://aichallenge.org/
 * http://aichallenge.org/language_profile.php?language=Perl
+* https://github.com/aichallenge/aichallenge/wiki
