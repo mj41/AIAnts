@@ -205,30 +205,30 @@ sub set {
 
 =head2 pos_plus
 
-Sum two positions A and B to get x, y on map (no behind map borders).
+Sum positions A and distance D to get x, y on map (no behind map borders).
 
- my ( $x, $y ) = $map->pos_plus( $Ax, $Ay, $Bx, $By );
+ my ( $x, $y ) = $map->pos_plus( $Ax, $Ay, $Dx, $Dy );
 
 =cut
 
 sub pos_plus {
-	my ( $self, $Ax, $Ay, $Bx, $By ) = @_;
+	my ( $self, $Ax, $Ay, $Dx, $Dy ) = @_;
 
-	my $x = $Ax + $Bx;
+	my $x = $Ax + $Dx;
 	if ( $x < 0 ) {
 		$x = $self->{mx} + $x + 1;
 	} elsif ( $x > $self->{mx} ) {
 		$x = $x - $self->{mx} - 1;
 	}
 
-	my $y = $Ay + $By;
+	my $y = $Ay + $Dy;
 	if ( $y < 0 ) {
 		$y = $self->{my} + $y + 1;
 	} elsif ( $y > $self->{my} ) {
 		$y = $y - $self->{my} - 1;
 	}
 
-	return $x, $y;
+	return ( $x, $y );
 }
 
 =head2 set_view
@@ -245,7 +245,7 @@ sub set_view {
 	# todo - optimize when moving
 
 	my $explored_bit = $self->{o_bits}{explored};
-	foreach my $pos ( @{ $self->{vr_map} } ) {
+	foreach my $pos ( @{ $self->{vr}{map} } ) {
 		my ( $x, $y ) = $self->pos_plus( $bot_x, $bot_y, $pos->[0], $pos->[1] );
 		next if $self->{m}[$x][$y] & $explored_bit;
 		$self->{m}[$x][$y] |= $explored_bit;

@@ -25,8 +25,8 @@ $mp->set( 'food', 5, 5 );
 $mp->set( 'water', 5, 4 );
 $mp->set( 'water', 5, 3 );
 
-$mp->set_view( 5, 5 );
+$mp->set_view( 3, 3 );
 
-print $mp->dump( 1 );
+print $mp->dump( 1,1 );
 
 done_testing();
