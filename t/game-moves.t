@@ -74,4 +74,43 @@ o o a o o . . . . .
 . . o . . . . . . .
 MAP_END
 
+
+# Test bot->map internals.
+my $map_obj = $game->bot->map;
+
+my $m_cch = $map_obj->vis_cache_on_map( $game->bot->map->{vr}{m_cch}, undef, 1 );
+my $mx = $#$m_cch;
+is( $map_obj->dump_map( $m_cch, 'x' ), <<MAP_END, 'm_cch' );
+. . . . . . .
+. . . x . . .
+. . x x x . .
+. x x x x x .
+. . x x x . .
+. . . x . . .
+. . . . . . .
+MAP_END
+
+my $m_cch_move_a = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{a}, $mx );
+is(  $map_obj->dump_map( $m_cch_move_a, 'a' ), <<MAP_END, 'm_cch_move-E-a' );
+. . . . . . .
+. . . . a . .
+. . . . . a .
+. . . . . . a
+. . . . . a .
+. . . . a . .
+. . . . . . .
+MAP_END
+
+my $m_cch_move_r = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{r}, $mx );
+is( $map_obj->dump_map( $m_cch_move_r, 'r' ), <<MAP_END, 'm_cch_move-E-r' );
+. . . . . . .
+. . . r . . .
+. . r . . . .
+. r . . . . .
+. . r . . . .
+. . . r . . .
+. . . . . . .
+MAP_END
+
+
 done_testing();

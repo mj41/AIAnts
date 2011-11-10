@@ -31,11 +31,6 @@ sub new {
     };
     bless $self, $class;
 
-    $self->init_map();
-    $self->init_radius( 'vr', $args{viewradius2} );
-    $self->init_radius( 'ar', $args{attackradius2} );
-    $self->init_radius( 'sr', $args{spawnradius2} );
-
     $self->{o_bits} = {
         unknown  => 0,    #  0
         explored => 2**0, #  1
@@ -56,7 +51,31 @@ sub new {
         ant      => [ 'a', chr(0x10312) ],
     };
 
+    $self->init_map();
+    $self->init_radius_cache( 'vr', $args{viewradius2},   1 );
+    $self->init_radius_cache( 'ar', $args{attackradius2}, 0 );
+    $self->init_radius_cache( 'sr', $args{spawnradius2},  0 );
+
     return $self;
+}
+
+=head2 get_empty_map
+
+Return map initialized to zeros.
+
+=cut
+
+sub get_empty_map {
+    my ( $self, $mx, $my ) = @_;
+
+    my $mp = [];
+    foreach my $x ( 0..$mx ) {
+        # todo - optimize - better syntax?
+        foreach my $y ( 0..$my ) {
+            $mp->[$x][$y] = 0;
+        }
+    }
+    return $mp;
 }
 
 =head2 init_map
@@ -68,13 +87,7 @@ Initialize map to zeros.
 sub init_map {
     my ( $self ) = @_;
 
-    foreach my $x ( 0..$self->{mx} ) {
-        # todo - optimize - better syntax?
-        foreach my $y ( 0..$self->{my} ) {
-            $self->{m}[$x][$y] = 0;
-        }
-    }
-
+    $self->{m} = $self->get_empty_map( $self->{mx}, $self->{my} );
     $self->{m_hive} = {};
     $self->{m_ant} = {};
     return 1;
@@ -82,7 +95,7 @@ sub init_map {
 
 =head2 get_radius_cache
 
-Init helper parameter for computation with viewradius.
+Init helper parameter for computation with radius.
 
 =cut
 
@@ -90,7 +103,6 @@ sub get_radius_cache {
     my ( $self, $radius2 ) = @_;
 
     my $vm_distance = int sqrt( $radius2 );
-
     my $r_map = [
         [0,0]
     ];
@@ -107,8 +119,61 @@ sub get_radius_cache {
             }
         }
     }
-
     return $r_map;
+}
+
+=head2 compute_move_cache
+
+Compute helper move caches.
+
+=cut
+
+sub compute_move_cache {
+    my ( $self, $r_cch, $h_map, $h_md, $Dx, $Dy ) = @_;
+
+    my $res = {
+        a => [],
+        r => [],
+    };
+    my $found = {};
+    foreach my $pos ( @$r_cch ) {
+        my ( $x, $y ) = @$pos;
+        unless ( $h_map->[$h_md+$x+$Dx][$h_md+$y+$Dy] ) {
+            push @{$res->{a}}, [ $x+$Dx, $y+$Dy ];
+        } else {
+            my $str = ($h_md+$x).','.($h_md+$y);
+            $found->{$str} = undef;
+        }
+    }
+    foreach my $pos ( @$r_cch ) {
+        my ( $x, $y ) = @$pos;
+        my $str = ($h_md+$x-$Dx).','.($h_md+$y-$Dy);
+        next if exists $found->{$str};
+        push @{$res->{r}}, [ $x, $y ];
+    }
+
+    return $res;
+}
+
+
+=head2 get_radius_move_caches
+
+Get helper move caches for computation with radius and movements.
+
+=cut
+
+sub get_radius_move_caches {
+    my ( $self, $r_cch ) = @_;
+
+    my $h_map = $self->vis_cache_on_map( $r_cch, undef, 1 );
+    my $h_md = int( (scalar @$h_map) / 2 );
+
+    my $move_cch = {};
+    $move_cch->{N} = $self->compute_move_cache( $r_cch, $h_map, $h_md, -1,  0 );
+    $move_cch->{E} = $self->compute_move_cache( $r_cch, $h_map, $h_md,  0,  1 );
+    $move_cch->{S} = $self->compute_move_cache( $r_cch, $h_map, $h_md,  1,  0 );
+    $move_cch->{W} = $self->compute_move_cache( $r_cch, $h_map, $h_md,  0, -1 );
+    return $move_cch;
 }
 
 =head2 init_radius
@@ -117,18 +182,61 @@ Init helper parameter for computation with radius.
 
 =cut
 
-sub init_radius {
-    my ( $self, $radius_shortcut, $radius2 ) = @_;
-
+sub init_radius_cache {
+    my ( $self, $radius_shortcut, $radius2, $also_move_caches ) = @_;
     die "No radius2 defined for shortcut '$radius_shortcut'.\n" unless defined $radius2;
 
-    my $r_map = $self->get_radius_cache( $radius2 );
     $self->{$radius_shortcut}{r2} = $radius2;
-    $self->{$radius_shortcut}{map} = $r_map;
+
+    my $r_cache = $self->get_radius_cache( $radius2 );
+    $self->{$radius_shortcut}{m_cch} = $r_cache;
+
+    if ( $also_move_caches ) {
+        my $r_move_caches = $self->get_radius_move_caches(
+            $self->{$radius_shortcut}{m_cch}
+        );
+        $self->{$radius_shortcut}{m_cch_move} = $r_move_caches;
+    }
+
     return 1;
 }
 
-=head2 new
+=head2 vis_cache_on_map
+
+Make temp map and visualize caches on it.
+
+=cut
+
+sub vis_cache_on_map {
+    my ( $self, $r_cch, $h_max, $padding ) = @_;
+    $padding //= 0;
+
+    unless ( $h_max ) {
+        my $mx = 0;
+        my $my = 0;
+        foreach my $pos ( @$r_cch ) {
+            $mx = abs($pos->[0]) if abs($pos->[0]) > $mx;
+            $my = abs($pos->[1]) if abs($pos->[1]) > $my;
+        }
+
+        $h_max = $mx;
+        $h_max = $my if $my > $h_max;
+        $h_max = $h_max*2 + 2*$padding;
+    }
+
+    my $middle = int( ($h_max+1) / 2 );
+    return '' unless $middle > 0;
+    #print "$h_max $middle\n";
+
+    my $h_map = $self->get_empty_map( $h_max, $h_max );
+    foreach my $pos ( @$r_cch ) {
+        my ( $x, $y ) = @$pos;
+        $h_map->[$x+$middle][$y+$middle] = 1;
+    }
+    return $h_map;
+}
+
+=head2 dump
 
 Return map dumped to ascii/utf8.
 
@@ -145,16 +253,61 @@ sub dump {
     my $show_explored = $force_opts{show_explored} // 1;
 
     my $line_prefix = $force_opts{o_line_prefix} // $self->{o_line_prefix};
+    return $self->dump_raw(
+        $self->{m}, $self->{mx}, $self->{my}, $normal, $view,
+        $char_pos, $show_explored, undef, $line_prefix
+    );
+}
 
+=head2 dump_map
+
+Dump map provided as parameter.
+
+=cut
+
+sub dump_map {
+    my ( $self, $mp, $char, $line_prefix ) = @_;
+    $char //= 'x';
+    $line_prefix //= '';
+
+    my $mx = $#$mp;
+    my $my = $#{$mp->[0]};
+    return $self->dump_raw(
+        $mp, $mx, $my, 1, 0,
+        0, 1, $char, $line_prefix
+    );
+}
+
+=head2 dump_raw
+
+Raw way of map dumping.
+
+=cut
+
+sub dump_raw {
+    my (
+        $self,
+        $map, $mx, $my, $normal, $view,
+        $char_pos, $show_explored, $explored_char, $line_prefix
+    ) = @_;
+
+    my $o_bits = $self->{o_bits};
+    my $o_chars = $self->{o_chars};
     my $out = '';
     my ( $x, $y );
-    foreach $x ( 0..$self->{mx} ) {
+    foreach $x ( 0..$mx ) {
         $out .= $line_prefix;
         if ( $normal ) {
-            my $o_bits = $self->{o_bits};
-            my $o_chars = $self->{o_chars};
-            foreach $y ( 0..$self->{my} ) {
-                my $val = $self->{m}[$x][$y];
+            unless ( defined $explored_char ) {
+                if ( $show_explored ) {
+                    $explored_char = $o_chars->{explored}[$char_pos];
+                } else {
+                    $explored_char = $o_chars->{unknown}[$char_pos];
+                }
+            }
+
+            foreach $y ( 0..$my ) {
+                my $val = $map->[$x][$y];
 
                 $out .= ' ' if $y;
                 if ( $val & $o_bits->{ant} ) {
@@ -170,11 +323,7 @@ sub dump {
                     $out .= $o_chars->{water}[$char_pos];
 
                 } elsif ( $val & $o_bits->{explored} ) {
-                    if ( $show_explored ) {
-                        $out .= $o_chars->{explored}[$char_pos];
-                    } else {
-                        $out .= $o_chars->{unknown}[$char_pos];
-                    }
+                    $out .= $explored_char;
 
                 } else {
                     $out .= $o_chars->{unknown}[$char_pos];
@@ -184,10 +333,10 @@ sub dump {
 
         if ( $view ) {
             $out .= '   ' if $normal;
-            foreach $y ( 0..$self->{my} ) {
-                my $val = $self->{m}[$x][$y];
+            foreach $y ( 0..$my ) {
+                my $val = $map->[$x][$y];
                 $out .= ' ' if $y;
-                $out .= sprintf( "%02d", $self->{m}[$x][$y] );
+                $out .= sprintf( "%02d", $map->[$x][$y] );
             }
         }
 
@@ -256,7 +405,7 @@ sub set_explored {
     # todo - optimize when moving
 
     my $explored_bit = $self->{o_bits}{explored};
-    foreach my $pos ( @{ $self->{vr}{map} } ) {
+    foreach my $pos ( @{ $self->{vr}{m_cch} } ) {
         my ( $x, $y ) = $self->pos_plus( $bot_x, $bot_y, $pos->[0], $pos->[1] );
         next if $self->{m}[$x][$y] & $explored_bit;
         $self->{m}[$x][$y] |= $explored_bit;
