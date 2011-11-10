@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp qw(carp croak);
 
-use base 'AIAnts::BotBase';
+use base 'AIAnts::BotSimple';
 
 =head1 NAME
 
@@ -36,6 +36,7 @@ Make orders.
 
 sub orders {
     my $self = shift;
+    $self->SUPER::setup( @_ );
 
     my @orders = ();
     foreach my $ant_data ( $self->my_ants ) {

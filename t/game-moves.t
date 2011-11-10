@@ -5,16 +5,10 @@ use Test::More;
 
 use lib 'lib';
 use lib 't/lib';
-use AIAnts::TestBot;
+use AIAnts::TestBotHash;
 use AIAnts::TestGame;
 
-my $bot = AIAnts::TestBot->new(
-    map => {
-        o_utf8 => 0,
-    },
-);
-
-
+my $bot = AIAnts::TestBotHash->new();
 my $game = new AIAnts::TestGame( bot => $bot );
 
 $game->set_input(q(
@@ -42,7 +36,7 @@ is( $game->bot->map->dump(1), <<MAP_END, 'setup' );
 . . . . . . . . . .
 MAP_END
 
-=pod 
+=pod
 
 . f . . . . . . . .
 . . a . . . . . . .
@@ -57,23 +51,42 @@ MAP_END
 
 
 $game->set_input(q(
-    h 2 2 0
-    h 5 7 1
     a 1 2 0
-    a 6 7 1
+    w 1 1
+    w 7 2
 ));
+$bot->set_next_turn( [ 1, 2, 'S' ] );
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
-o o a o o . . . . .
-. o h o . . . . . .
+o % o o o . . . . .
+. o o o . . . . . .
 . . o . . . . . . .
 . . . . . . . . . .
-. . . . . . . h . .
-. . . . . . . a . .
-. . o . . . . . . .
+. . . . . . . . . .
+. . . . . . . . . .
+. . % . . . . . . .
 MAP_END
 
+#use Data::Dumper; print Dumper( $game->bot );
+
+$game->set_input(q(
+    a 2 2 0
+    f 0 1
+    w 4 2
+));
+$bot->set_next_turn( [ 2, 2, 'S' ] );
+$game->do_turn;
+is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
+. o o o . . . . . .
+o % o o o . . . . .
+o o o o o . . . . .
+. o o o . . . . . .
+. . % . . . . . . .
+. . . . . . . . . .
+. . . . . . . . . .
+. . % . . . . . . .
+MAP_END
 
 # Test bot->map internals.
 my $map_obj = $game->bot->map;

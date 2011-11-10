@@ -4,23 +4,15 @@ use warnings;
 use Test::More;
 
 use lib 'lib';
-use AIAnts::BotBase;
-use AIAnts::Game;
+use lib 't/lib';
+use AIAnts::TestBotSimple;
+use AIAnts::TestGame;
 
-my $bot = AIAnts::BotBase->new(
-    map => {
-        o_utf8 => 0,
-    },
-);
-my %game_conf = (
+my $bot = AIAnts::TestBotSimple->new();
+my $game = new AIAnts::TestGame(
     bot => $bot,
     in_fpath => 't/data/game-web.txt',
 );
-
-no warnings 'redefine';
-*AIAnts::Game::my_say = sub {};
-
-my $game = new AIAnts::Game( %game_conf );
 $game->run;
 
 my ( $map_dump, $ok_map );

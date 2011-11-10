@@ -24,38 +24,47 @@ sub new {
     my ( $class, %args ) = @_;
 
     my $self = {
-        corpses => undef,
-        ants => undef,
         config => undef,
-
+        turn_num => 0,
     };
     bless $self, $class;
 
-    $self->{fh} = $self->get_input_fh( %args );
+    $self->set_input_fh( %args );
+
     $self->{bot} = $args{bot};
+    $self->{turn_as_hash} = $self->{bot}->do_turn_at_once();
+
     return $self;
 }
 
 
-=head2 get_input_fh
+=head2 set_input_fh
 
-Return initialized file handle for input reading.
+Set initialized file handle for input reading.
 
 =cut
 
-sub get_input_fh {
+sub set_input_fh {
     my ( $self, %args ) = @_;
 
-    return $args{fh} if defined $args{fh};
+    if ( defined $args{fh} ) {
+        $self->{in_source} = 'fh';
+        $self->{fh} = $args{fh};
+        return 1;
+    }
 
     if ( $args{in_fpath} ) {
+        $self->{in_source} = 'fpath';
         my $fh;
         open($fh, '<', $args{in_fpath} )
             || croak "Can't open '$args{in_fpath}' for read: $!\n";
-        return $fh;
+        $self->{fh} = $fh;
+        return 1;
     }
 
-    return \*STDIN;
+    $self->{in_source} = 'stdin';
+    $self->{fh} = \*STDIN;
+    return 1;
 }
 
 =head2 get_next_input_line
@@ -181,10 +190,11 @@ Do one turn init_turn, parse_turn, turn. Return 0 if it was the last turn 1 othe
 sub do_turn {
     my $self = shift;
 
-    $self->init_turn();
-    my $last_cmd = $self->parse_turn();
+    $self->{turn_num}++;
+    $self->init_turn( $self->{turn_num} );
+    my ( $last_cmd, $turn_data ) = $self->parse_turn();
     return 0 if $last_cmd eq 'end';
-    $self->turn();
+    $self->turn( $self->{turn_num}, $turn_data );
     return 1;
 }
 
@@ -209,36 +219,77 @@ sub parse_turn {
     my $self = shift;
 
     my $line;
-    while (1) {
+    my $turn_data = {
+        w => {},   # water
+        a => {},   # ant
+        f => {},   # food
+        c => {},   # coprse
+        h => {},   # whive
+    };
+    LINE: while (1) {
         $line = $self->get_next_input_line();
-        next unless $line;
-        last if $line eq 'go' || $line eq 'end';
+        next LINE unless $line;
+        last LINE if $line eq 'go' || $line eq 'end';
 
         my ( $cmd, $x, $y, $owner ) = split( /\s/, $line );
+
+        # turn as hash - save each item info to hash and send as turn parameter to bot
+        if ( $self->{turn_as_hash} ) {
+            if ( $cmd eq 'w' ) {
+                $turn_data->{w}{"$x,$y"} = [ $x, $y ];
+                next LINE;
+            }
+            if ( $cmd eq 'a' ) {
+                $turn_data->{a}{"$x,$y"} = [ $x, $y, $owner ];
+                next LINE;
+            }
+            if ( $cmd eq 'f' ) {
+                $turn_data->{f}{"$x,$y"} = [ $x, $y ];
+                next LINE;
+            }
+            if ( $cmd eq 'c' ) {
+                $turn_data->{c}{"$x,$y"} = [ $x, $y, $owner ];
+                next LINE;
+            }
+            if ( $cmd eq 'h' ) {
+                $turn_data->{h}{"$x,$y"} = [ $x, $y, $owner ];
+                next LINE;
+            }
+            next LINE;
+        }
 
         # water
         if ( $cmd eq 'w' ) {
             $self->{bot}->set_water( $x, $y );
+            next LINE;
+        }
 
         # food
-        } elsif ( $cmd eq 'f' ) {
+        if ( $cmd eq 'f' ) {
             $self->{bot}->set_food( $x, $y );
+            next LINE;
+        }
 
         # ant
-        } elsif ( $cmd eq 'a' ) {
+        if ( $cmd eq 'a' ) {
             $self->{bot}->set_ant( $x, $y, $owner );
+            next LINE;
+        }
 
         # hive (ant hill)
-        } elsif ( $cmd eq 'h' ) {
+        if ( $cmd eq 'h' ) {
             $self->{bot}->set_hive( $x, $y, $owner );
+            next LINE;
+        }
 
         # dead ant (corpse)
-        } elsif ( $cmd eq 'd' ) {
+        if ( $cmd eq 'd' ) {
             $self->{bot}->set_corpse( $x, $y, $owner );
+            next LINE;
         }
     }
 
-    return $line;
+    return ( $line, $turn_data );
 }
 
 =head2 turn
@@ -248,8 +299,8 @@ This method is called each turn to generate orders. Call orders method on bot ob
 =cut
 
 sub turn {
-    my $self = shift;
-    my @orders = $self->{bot}->orders();
+    my ( $self, $turn_num, $turn_data ) = @_;
+    my ( @orders ) = $self->{bot}->turn( $turn_num, $turn_data );
     foreach my $order ( @orders ) {
         $self->issue_order( @$order );
     }

@@ -18,12 +18,37 @@ Class for easy testing L<AIAnts::Game> class.
 
 =head2 my_say
 
-Do not print anything.
+Do not print anything. Remember output lines.
 
 =cut
 
 sub my_say {
+    my $self = shift;
+    $self->{__t_output} = '' unless defined $self->{__t_output};
+    $self->{__t_output} .= join( '', @_ ) . "\n";
     return 1;
+}
+
+=head2 get_output
+
+Return lines send as output to game.
+
+=cut
+
+sub get_output {
+    my $self = shift;
+    return $self->{__t_output};
+}
+
+=head2 reset_output
+
+Reset remembered output.
+
+=cut
+
+sub reset_output {
+    my $self = shift;
+    $self->{__t_output} = '';
 }
 
 =head2 set_input
@@ -34,6 +59,9 @@ Mock next input lines from string (game commands separated by new line).
 
 sub set_input {
     my ( $self, $input ) = @_;
+
+    $self->{in_source} = 'mocked';
+
     $input =~ s/^\n//;
     $input =~ s/\n$//;
     $self->{__t_input_lines} = [ split("\n",$input) ];
@@ -48,6 +76,10 @@ Mock get_next_input_line method.
 
 sub get_next_input_line {
     my $self = shift;
+
+    if ( $self->{in_source} ne 'mocked' ) {
+        return $self->SUPER::get_next_input_line();
+    }
 
     my $line = shift @{ $self->{__t_input_lines} };
     return 'go' unless $line;

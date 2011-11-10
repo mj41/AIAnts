@@ -76,91 +76,10 @@ Called before new turn params are parser and set_* methods called.
 =cut
 
 sub init_turn {
-    my ( $self ) = @_;
-    use Data::Dumper;
-    #$self->log( Dumper($self->{my_ants}) );
+    my ( $self, $turn_num ) = @_;
 }
 
-=head2 set_water
-
-Called when 'water' position parsed.
-
-=cut
-
-sub set_water {
-    my ( $self, $x, $y ) = @_;
-    return $self->{m}->set( 'water', $x, $y );
-}
-
-=head2 set_food
-
-Called when 'food' position parsed.
-
-=cut
-
-sub set_food {
-    my ( $self, $x, $y ) = @_;
-    return $self->{m}->set( 'food', $x, $y );
-}
-
-=head2 set_ant
-
-Set map position to 'water', 'food' or 'corpse'.
-
-=cut
-
-sub set_ant {
-    my ( $self, $x, $y, $owner ) = @_;
-
-    my $pos_str = "$x,$y";
-
-    $self->{m}->set( 'ant', $x, $y, $owner );
-
-    if ( $owner eq '0' ) {
-        return if exists $self->{my_ants}{$pos_str};
-        $self->{ants}++;
-        $self->{my_ants}{$pos_str} = [ $self->{ants}, $x+0, $y+0 ];
-        $self->{m}->set_explored( $x, $y );
-    }
-
-    return 1;
-}
-
-=head2 my_ants
-
-Return my ants data.
-
-=cut
-
-sub my_ants {
-    my $self = shift;
-    return values %{ $self->{my_ants} };
-}
-
-=head2 set_hive
-
-Called when 'hive' position parsed.
-
-=cut
-
-sub set_hive {
-    my ( $self, $x, $y, $owner ) = @_;
-    return $self->{m}->set( 'hive', $x, $y, $owner );
-    return 1;
-}
-
-=head2 set_corpse
-
-Called when 'corpse' (dead ant) position parsed.
-
-=cut
-
-sub set_corpse {
-    my ( $self, $x, $y, $owner ) = @_;
-    return 1;
-}
-
-=head2 orders
+=head2 turn
 
 Return array of array refs with commands (ants movements).
 
@@ -168,8 +87,10 @@ Return array of array refs with commands (ants movements).
 
 =cut
 
-sub orders {
-    my $self = shift;
+sub turn {
+    my ( $self, $turn_num, $turn_data ) = @_;
+
+    croak 'Method turn not implemented in ' . __PACKAGE__;
     return ();
 }
 

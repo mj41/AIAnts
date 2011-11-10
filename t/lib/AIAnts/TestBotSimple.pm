@@ -1,11 +1,9 @@
-package AIAnts::TestBot;
+package AIAnts::TestBotSimple;
 
 use strict;
 use warnings;
-use Carp qw(carp croak);
 
-use base 'AIAnts::BotBase';
-
+use base 'AIAnts::BotSimple';
 
 =head1 AUTHOR
 

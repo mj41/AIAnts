@@ -40,7 +40,7 @@ sub new {
         ant      => 2**4, # 16
     };
 
-    $self->{o_utf8} = $args{o_utf8} // 1;
+    $self->{o_utf8} = $args{o_utf8} // 0;
     $self->{o_line_prefix} = $args{o_line_prefix} // '';
     $self->{o_chars} = {
         unknown  => [ '.', chr(0x00B7)  ],
