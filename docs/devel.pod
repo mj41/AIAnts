@@ -21,3 +21,28 @@
  cat game_logs/0.bot0.error && cat ../../temp/game-out.txt
 
 =cut
+
+=head1 Upload
+
+=head2 Config example
+
+ cat ~/.aibots.cred
+ 
+ myLogin
+ mySecretPasswd
+
+ vim ~/.aibots.cred
+ chmod go-rwx ~/.aibots.cred
+ touch ~/.aibots.cookies
+ chmod go-rwx ~/.aibots.cookies
+ 
+=head2 Required modules
+
+ cpanm Archive::Zip
+
+=head2 Upload
+
+ perl util/upload.pl
+ perl util/upload.pl up
+
+=cut
