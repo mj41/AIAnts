@@ -2,9 +2,8 @@ package MyBot;
 
 use strict;
 use warnings;
-use Carp qw(carp croak);
 
-use base 'AIAnts::BotSimple';
+use base 'AIAnts::BotHash';
 
 =head1 NAME
 
@@ -25,25 +24,19 @@ Setup.
 sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
-    $self->{br} = {};
 }
 
-=head2 orders
+=head2 turn
 
-Make orders.
+Make turn/orders.
 
 =cut
 
-sub orders {
-    my $self = shift;
-    $self->SUPER::setup( @_ );
+sub turn {
+    my ( $self, $turn_num, $turn_data ) = @_;
+    $self->SUPER::turn( $turn_num, $turn_data );
 
     my @orders = ();
-    foreach my $ant_data ( $self->my_ants ) {
-        my ( $ant_num, $x, $y ) = @$ant_data;
-        #push @orders, [ $x, $y, 'S' ];
-
-    }
     return @orders;
 }
 
