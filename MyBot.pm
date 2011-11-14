@@ -49,34 +49,38 @@ sub turn {
         next unless $owner == 0;
 
         my $dir;
-        my ( $Nx, $Ny );
+        my ( $Dx, $Dy, $Nx, $Ny );
         my $dir_num = 0;
         while ( 1 ) {
             $dir = $dirs->[ $dir_num ];
-            my ( $Dx, $Dy ) = ( 0, 0 );
             if ( $dir eq 'N' ) {
-                $Dx--;
+                $Dx = -1;
+                $Dy =  0;
             } elsif ( $dir eq 'E' ) {
-                $Dy++;
+                $Dx =  0;
+                $Dy =  1;
             } elsif ( $dir eq 'S' ) {
-                $Dx++;
+                $Dx =  1;
+                $Dy =  0;
             } elsif ( $dir eq 'W' ) {
-                $Dy--;
+                $Dx =  0;
+                $Dy = -1;
             }
 
             ( $Nx, $Ny ) = $map_obj->pos_plus( $x, $y, $Dx, $Dy );
-            unless ( $map->[$x][$y] & $water_bit ) {
-                last unless exists $used->{"$Nx,$Ny"};
+            if ( (not $map->[$Nx][$Ny] & $water_bit)
+                  && (not exists $used->{"$Nx,$Ny"})
+                  && (not exists $turn_data->{a}{"$Nx,$Ny"})
+               )
+            {
+                $used->{"$Nx,$Ny"} = 1;
+                push @orders, [ $x, $y, $dir ];
+                last;
             }
             $dir_num++;
             last if $dir_num == 4;
         }
-        if ( $dir_num == 4 ) {
-            $used->{"$x,$y"} = 1;
-        } else {
-            $used->{"$Nx,$Ny"} = 1;
-            push @orders, [ $x, $y, $dir ];
-        }
+        $used->{"$x,$y"} = 1 if $dir_num == 4;
     }
 
     return @orders;
