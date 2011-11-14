@@ -50,7 +50,7 @@ sub turn {
 
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
-        my $dir_num = 0;
+        my $dir_num = int rand 3;
         while ( 1 ) {
             $dir = $dirs->[ $dir_num ];
             if ( $dir eq 'N' ) {
