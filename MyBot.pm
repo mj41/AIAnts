@@ -41,7 +41,7 @@ sub get_ant_role {
 
 =head2 new_ant_created
 
-Called during 'turb_body' if new ant was found/created.
+Called during 'turn_body' if new ant was found/created.
 
 =cut
 

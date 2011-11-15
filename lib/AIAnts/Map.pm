@@ -463,9 +463,8 @@ sub update_new_after_turn {
     my $o_bits_water = $self->{o_bits}{'water'};
     foreach my $pos ( @$m_new ) {
         my ( $x, $y ) = @$pos;
-        my $str_pos = "$x,$y";
         $map->[$x][$y] |= $o_bits_explored;
-        if ( exists $turn_data->{water}{$str_pos} ) {
+        if ( exists $turn_data->{water}{"$x,$y"} ) {
             $map->[$x][$y] |= $o_bits_water;
         }
     }
