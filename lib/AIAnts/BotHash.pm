@@ -35,6 +35,8 @@ sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
 
+    $self->{turn_num} = 0;
+
     $self->{pos2ant_num} = {};
     $self->{max_ant_num} = 0;
     $self->{ant_num2prev_pos} = {};
@@ -50,6 +52,7 @@ Call init_turn on your bot.
 
 sub init_turn {
     my ( $self, $turn_num ) = @_;
+    $self->{turn_num} = $turn_num;
 }
 
 =head2 turn
@@ -98,8 +101,20 @@ sub get_ant_num {
     my ( $self, $x, $y ) = @_;
     my $pos_str = "$x,$y";
     return $self->{pos2ant_num}{$pos_str} if exists $self->{pos2ant_num}{$pos_str};
-    $self->{pos2ant_num}{$pos_str} = $self->{max_ant_num}++;
+    $self->{max_ant_num}++;
+    $self->{pos2ant_num}{$pos_str} = $self->{max_ant_num};
+    $self->new_ant_created( $self->{max_ant_num} );
     return $self->{max_ant_num};
+}
+
+=head2 new_ant_created
+
+Called during 'turb_body' if new ant was found/created.
+
+=cut
+
+sub new_ant_created {
+    my ( $self, $ant_num ) = @_;
 }
 
 =head2 turn_body

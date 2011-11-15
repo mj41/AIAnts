@@ -24,6 +24,30 @@ Setup.
 sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
+
+    $self->{ant2role} = {};
+}
+
+=head2 get_ant_role
+
+Get ant role for newly created ant.
+
+=cut
+
+sub get_ant_role {
+    my ( $self, $ant_num ) = @_;
+    return 'hungry';
+}
+
+=head2 new_ant_created
+
+Called during 'turb_body' if new ant was found/created.
+
+=cut
+
+sub new_ant_created {
+    my ( $self, $ant_num ) = @_;
+    $self->{ant2role}{$ant_num} = $self->get_ant_role( $ant_num );
 }
 
 =head2 turn_body
