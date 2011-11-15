@@ -349,7 +349,7 @@ sub dump_raw {
 
 Set position on map to concrete type.
 
- $map->set( 'f', 1, 2 ); # food on [1,2]
+ $map->set( 'food', 1, 2 ); # food on [1,2]
 
 =cut
 
@@ -358,7 +358,7 @@ sub set {
     $self->{m}[$x][$y] |= $self->{o_bits}{ $type };
 
     if ( defined $owner ) {
-        $self->{"m_".$type}{$x}{$y} = $owner;
+        $self->{"m_".$type}{"$x,$y"} = $owner;
     }
     return 1;
 }

@@ -25,6 +25,30 @@ sub do_turn_at_once {
     return 1;
 }
 
+=head2 setup
+
+Setup.
+
+=cut
+
+sub setup {
+    my $self = shift;
+    $self->SUPER::setup( @_ );
+    $self->{pos2ant_num} = {};
+    $self->{max_ant_num} = 0;
+}
+
+=head2 init_turn
+
+Call init_turn on your bot.
+
+=cut
+
+sub init_turn {
+    my ( $self, $turn_num ) = @_;
+}
+
+
 =head2 turn
 
 Return array of array refs with commands (ants movements).
@@ -36,10 +60,44 @@ Return array of array refs with commands (ants movements).
 sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    # todo - optimize
     $self->init_after_first_turn( $turn_data ); # if $turn_num == 1;
+    $self->update_after_turn( $turn_data );
 
-    return ();
+    my $changes = $self->turn_body( $turn_num, $turn_data );
+
+    my @orders = ();
+    my $ant_pos = {};
+    foreach my $change_data ( values %$changes ) {
+        my ( $ant_num, $x, $y, $dir, $Nx, $Ny ) = @$change_data;
+
+        # no move
+        unless ( defined $Nx ) {
+            $ant_pos->{"$x,$y"} = $ant_num;
+            next;
+        }
+
+        # move
+        $ant_pos->{"$Nx,$Ny"} = $ant_num;
+        push @orders, [ $x, $y, $dir ];
+    }
+
+    $self->{pos2ant_num} = $ant_pos;
+    return @orders;
+}
+
+
+sub get_ant_num {
+    my ( $self, $x, $y ) = @_;
+    my $pos_str = "$x,$y";
+    return $self->{pos2ant_num}{$pos_str} if exists $self->{pos2ant_num}{$pos_str};
+    $self->{pos2ant_num}{$pos_str} = $self->{max_ant_num}++;
+    return $self->{max_ant_num};
+}
+
+
+sub turn_body {
+    my ( $self, $turn_num, $turn_data ) = @_;
+    return {};
 }
 
 
@@ -58,6 +116,12 @@ sub init_after_first_turn {
 
     return 1;
 }
+
+
+sub update_after_turn {
+    my ( $self, $turn_data ) = @_;
+}
+
 
 =head1 AUTHOR
 

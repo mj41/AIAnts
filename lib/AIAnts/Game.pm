@@ -205,8 +205,8 @@ Call init_turn on your bot.
 =cut
 
 sub init_turn {
-    my $self = shift;
-    $self->{bot}->init_turn();
+    my ( $self, $turn_num ) = @_;
+    $self->{bot}->init_turn( $turn_num );
 }
 
 =head2 parse_turn
