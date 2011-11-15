@@ -54,6 +54,8 @@ $game->set_input(q(
     a 1 2 0
     w 1 1
     w 7 2
+    h 1 4 1
+    f 2 2
 ));
 $bot->set_next_changes({
     # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
@@ -62,8 +64,8 @@ $bot->set_next_changes({
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
-o % o o o . . . . .
-. o o o . . . . . .
+o % a o h . . . . .
+. o f o . . . . . .
 . . o . . . . . . .
 . . . . . . . . . .
 . . . . . . . . . .
@@ -73,10 +75,13 @@ MAP_END
 
 #use Data::Dumper; print Dumper( $game->bot );
 
+# new 2,0 ; 3,1 ; 4,2 ; 3,3; 2;4
 $game->set_input(q(
     a 2 2 0
-    f 0 1
+    f 2 0
     w 4 2
+    f 1 3
+    h 2 4
 ));
 $bot->set_next_changes({
     # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
@@ -85,8 +90,8 @@ $bot->set_next_changes({
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o o o . . . . . .
-o % o o o . . . . .
-o o o o o . . . . .
+o % o f o . . . . .
+f o a o h . . . . .
 . o o o . . . . . .
 . . % . . . . . . .
 . . . . . . . . . .

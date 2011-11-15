@@ -15,18 +15,18 @@ my $game = new AIAnts::TestGame(
 );
 $game->run;
 
-my $dp = $game->bot->map->dump(1,0);
+my $dp = $game->bot->map->dump(1,1);
 is(
     $dp,
-      ". % % .\n"
-    . ". o . .\n"
-    . ". . . .\n",
+      ". % % .   00 02 02 00\n"
+    . ". a a .   00 17 16 00\n"
+    . ". f . .   00 04 00 00\n",
     'map dump'
 );
 
 is_deeply(
     $game->get_output,
-    "go\ngo\ngo\n",
+    "go\ngo\n",
     'output'
 );
 

@@ -30,7 +30,7 @@ is(
 
 is_deeply(
     $game->get_output,
-    "go\ngo\ngo\n",
+    "go\ngo\n",
     'output'
 );
 

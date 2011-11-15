@@ -38,6 +38,7 @@ sub new {
         food     => 2**2, #  4
         hive     => 2**3, #  8
         ant      => 2**4, # 16
+        corpse   => 2**5, # 32
     };
 
     $self->{o_utf8} = $args{o_utf8} // 0;
@@ -88,8 +89,14 @@ sub init_map {
     my ( $self ) = @_;
 
     $self->{m} = $self->get_empty_map( $self->{mx}, $self->{my} );
-    $self->{m_hive} = {};
-    $self->{m_ant} = {};
+
+    # one turn data
+    $self->{otd} = {
+        ant => {},
+        corpse => {},
+        hive => {},
+        food => {},
+    };
     return 1;
 }
 
@@ -357,11 +364,76 @@ sub set {
     my ( $self, $type, $x, $y, $owner ) = @_;
     $self->{m}[$x][$y] |= $self->{o_bits}{ $type };
 
+    # hive, ant, corpse
     if ( defined $owner ) {
-        $self->{"m_".$type}{"$x,$y"} = $owner;
+        $self->{otd}{$type}{"$x,$y"} = [ $x, $y, $owner ];
+
+    # food
+    } elsif ( $type ne 'water' && $type ne 'explored' ) {
+        $self->{otd}{$type}{"$x,$y"} = [ $x, $y ];
     }
     return 1;
 }
+
+=head2 init_from_turn_raw
+
+Initialize map - internal.
+
+=cut
+
+sub init_from_turn_raw {
+    my ( $self, $turn_data, $explored_and_water ) = @_;
+
+    my ( $x, $y, $owner );
+    my $map = $self->{m};
+
+    # turn == 1
+    if ( $explored_and_water ) {
+        foreach my $data ( values %{$turn_data->{ant}} ) {
+            ( $x, $y, $owner ) = @$data;
+            $self->set('ant', $x, $y, $owner );
+            next unless $owner == 0;
+            $self->set_explored( $x, $y );
+        }
+
+        my $o_bits_water = $self->{o_bits}{'water'};
+        foreach my $data ( values %{$turn_data->{water}} ) {
+            ( $x, $y ) = @$data;
+            $map->[$x][$y] |= $o_bits_water;
+        }
+
+    # turn >= 2
+    } else {
+        foreach my $data ( values %{$turn_data->{ant}} ) {
+            ( $x, $y, $owner ) = @$data;
+            $self->set('ant', $x, $y, $owner );
+        }
+    }
+
+    my $o_bits_food = $self->{o_bits}{'food'};
+    foreach my $data ( values %{$turn_data->{food}} ) {
+        ( $x, $y ) = @$data;
+        $map->[$x][$y] |= $o_bits_food;
+    }
+
+    foreach my $data ( values %{$turn_data->{hive}} ) {
+        ( $x, $y, $owner ) = @$data;
+        $self->set('hive', $x, $y, $owner );
+    }
+    return 1;
+}
+
+=head2 init_after_first_turn
+
+Initialize map before first turn.
+
+=cut
+
+sub init_after_first_turn {
+    my ( $self, $turn_data ) = @_;
+    return $self->init_from_turn_raw( $turn_data, 1 );
+}
+
 
 =head2 update_new_after_turn
 
@@ -372,19 +444,34 @@ Optimized version of updating newly explored area from turn data.
 sub update_new_after_turn {
     my ( $self, $m_new, $turn_data ) = @_;
 
-    my $o_bits_explored = $self->{o_bits}{'explored'};
-    my $o_bits_water = $self->{o_bits}{'water'};
-
+    my @otd_types = keys %{ $self->{otd} };
     my $map = $self->{m};
+    my $pos;
+
+    # reset previous - otd
+    my $o_bits_explored = $self->{o_bits}{explored};
+    foreach my $type ( @otd_types ) {
+        my $o_bits_type = $self->{o_bits}{$type};
+        my $rev_bit_o = 255 ^ $o_bits_type;
+        foreach $pos ( values %{ $self->{otd}{$type} } ) {
+            $map->[ $pos->[0] ][ $pos->[1] ] &= $rev_bit_o;
+        }
+        $self->{otd}{$type} = {};
+    }
+
+    # set water and explored
+    my $o_bits_water = $self->{o_bits}{'water'};
     foreach my $pos ( @$m_new ) {
         my ( $x, $y ) = @$pos;
         my $str_pos = "$x,$y";
         $map->[$x][$y] |= $o_bits_explored;
-        if ( exists $turn_data->{w}{$str_pos} ) {
+        if ( exists $turn_data->{water}{$str_pos} ) {
             $map->[$x][$y] |= $o_bits_water;
         }
     }
-    return 1;
+
+    # set otd
+    return $self->init_from_turn_raw( $turn_data, 0 );
 }
 
 =head2 pos_plus

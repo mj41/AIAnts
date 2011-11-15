@@ -73,7 +73,7 @@ sub turn_body {
     my $map_obj = $self->{m};
     my $map = $map_obj->{m};
     my $water_bit = $map_obj->{o_bits}{water};
-    foreach my $data ( values %{$turn_data->{a}} ) {
+    foreach my $data ( values %{$turn_data->{ant}} ) {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
@@ -100,7 +100,7 @@ sub turn_body {
             ( $Nx, $Ny ) = $map_obj->pos_plus( $x, $y, $Dx, $Dy );
             if ( (not $map->[$Nx][$Ny] & $water_bit)
                   && (not exists $changes->{"$Nx,$Ny"})
-                  && (not exists $turn_data->{a}{"$Nx,$Ny"})
+                  && (not exists $turn_data->{ant}{"$Nx,$Ny"})
                )
             {
                 $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];

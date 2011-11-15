@@ -66,9 +66,12 @@ Return array of array refs with commands (ants movements).
 sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    $self->init_after_first_turn( $turn_data ) if $turn_num == 1;
-    $self->set_area_diff( $turn_data );
-    $self->update_on_turn_begin( $turn_data );
+    if ( $turn_num == 1 ) {
+        $self->init_after_first_turn( $turn_data );
+    } else {
+        $self->set_area_diff( $turn_data );
+        $self->update_on_turn_begin( $turn_data );
+    }
 
     my $changes = $self->turn_body( $turn_num, $turn_data );
 
@@ -138,24 +141,14 @@ sub turn_body {
 
 =head2 init_after_first_turn
 
-Initialization after first run. Set e.g. full area explored and all water 
+Initialization after first run. Set e.g. full area explored and all water
 inside ants viewareas.
 
 =cut
 
 sub init_after_first_turn {
     my ( $self, $turn_data ) = @_;
-
-    foreach my $data ( values %{$turn_data->{a}} ) {
-        my ( $x, $y, $owner ) = @$data;
-        next unless $owner == 0;
-        $self->{m}->set_explored( $x, $y );
-    }
-
-    foreach my $data ( values %{$turn_data->{w}} ) {
-        $self->{m}->set( 'water', @$data );
-    }
-    return 1;
+    return $self->{m}->init_after_first_turn( $turn_data );
 }
 
 =head2 set_area_diff
@@ -173,7 +166,7 @@ sub set_area_diff {
     my $diff_a = [];
     my ( $Nx, $Ny );
     my $processed = {};
-    foreach my $data ( values %{$turn_data->{a}} ) {
+    foreach my $data ( values %{$turn_data->{ant}} ) {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 

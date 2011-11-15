@@ -220,11 +220,11 @@ sub parse_turn {
 
     my $line;
     my $turn_data = {
-        w => {},   # water
-        a => {},   # ant
-        f => {},   # food
-        c => {},   # coprse
-        h => {},   # whive
+        water => {},
+        ant => {},
+        food => {},
+        corpse => {},
+        hive => {},
     };
     LINE: while (1) {
         $line = $self->get_next_input_line();
@@ -236,23 +236,23 @@ sub parse_turn {
         # turn as hash - save each item info to hash and send as turn parameter to bot
         if ( $self->{turn_as_hash} ) {
             if ( $cmd eq 'w' ) {
-                $turn_data->{w}{"$x,$y"} = [ $x, $y ];
+                $turn_data->{water}{"$x,$y"} = [ $x, $y ];
                 next LINE;
             }
             if ( $cmd eq 'a' ) {
-                $turn_data->{a}{"$x,$y"} = [ $x, $y, $owner ];
+                $turn_data->{ant}{"$x,$y"} = [ $x, $y, $owner ];
                 next LINE;
             }
             if ( $cmd eq 'f' ) {
-                $turn_data->{f}{"$x,$y"} = [ $x, $y ];
+                $turn_data->{food}{"$x,$y"} = [ $x, $y ];
                 next LINE;
             }
             if ( $cmd eq 'c' ) {
-                $turn_data->{c}{"$x,$y"} = [ $x, $y, $owner ];
+                $turn_data->{corpse}{"$x,$y"} = [ $x, $y, $owner ];
                 next LINE;
             }
             if ( $cmd eq 'h' ) {
-                $turn_data->{h}{"$x,$y"} = [ $x, $y, $owner ];
+                $turn_data->{hive}{"$x,$y"} = [ $x, $y, $owner ];
                 next LINE;
             }
             next LINE;
