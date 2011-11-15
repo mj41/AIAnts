@@ -26,21 +26,26 @@ sub setup {
     $self->SUPER::setup( @_ );
 }
 
-=head2 turn
+=head2 turn_body
 
-Make turn/orders.
+Main part of turn processing. Should return hash ref with 
+
+ # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+
+inside if ant moves or 
+
+ # "$x,$y"   => [ $ant_num, $x, $y, $dir, undef, undef ] 
+
+if not.
 
 =cut
 
-sub turn {
+sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
-
-    $self->SUPER::turn( $turn_num, $turn_data );
 
     my $dirs = [ 'N', 'E', 'S', 'W' ];
 
-    my $used = {};
-    my @orders = ();
+    my $changes = {};
     my $map_obj = $self->{m};
     my $map = $map_obj->{m};
     my $water_bit = $map_obj->{o_bits}{water};
@@ -48,6 +53,7 @@ sub turn {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
+        my $ant_num = $self->get_ant_num( $x, $y );
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
         my $dir_num = int rand 3;
@@ -69,22 +75,22 @@ sub turn {
 
             ( $Nx, $Ny ) = $map_obj->pos_plus( $x, $y, $Dx, $Dy );
             if ( (not $map->[$Nx][$Ny] & $water_bit)
-                  && (not exists $used->{"$Nx,$Ny"})
+                  && (not exists $changes->{"$Nx,$Ny"})
                   && (not exists $turn_data->{a}{"$Nx,$Ny"})
                )
             {
-                $used->{"$Nx,$Ny"} = 1;
-                push @orders, [ $x, $y, $dir ];
+                $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];
                 last;
             }
             $dir_num++;
             last if $dir_num == 4;
         }
-        $used->{"$x,$y"} = 1 if $dir_num == 4;
+        $changes->{"$x,$y"} = [ $ant_num, $x, $y, $dir, undef, undef ] if $dir_num == 4;
     }
 
-    return @orders;
+    return $changes;
 }
+
 
 =head1 AUTHOR
 

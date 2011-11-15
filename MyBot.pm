@@ -28,7 +28,15 @@ sub setup {
 
 =head2 turn_body
 
-Main part of turn.
+Main part of turn processing. Should return hash ref with
+
+ # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+
+inside if ant moves or
+
+ # "$x,$y"   => [ $ant_num, $x, $y, $dir, undef, undef ]
+
+if not.
 
 =cut
 
@@ -46,8 +54,6 @@ sub turn_body {
         next unless $owner == 0;
 
         my $ant_num = $self->get_ant_num( $x, $y );
-        print STDERR "ant: $ant_num $x, $y\n";
-
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
         my $dir_num = int rand 3;

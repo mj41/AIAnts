@@ -26,18 +26,24 @@ sub setup {
     $self->SUPER::setup( @_ );
 }
 
-=head2 turn
+=head2 turn_body
 
-Make turn/orders.
+Main part of turn processing. Should return hash ref with
+
+ # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+
+inside if ant moves or
+
+ # "$x,$y"   => [ $ant_num, $x, $y, $dir, undef, undef ]
+
+if not.
 
 =cut
 
-sub turn {
+sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
-    $self->SUPER::turn( $turn_num, $turn_data );
 
-    my @orders = ();
-    return @orders;
+    return {};
 }
 
 =head1 AUTHOR

@@ -6,21 +6,23 @@ use warnings;
 use base 'AIAnts::BotHash';
 
 
-sub set_next_turn {
-    my $self = shift;
-    $self->{__t_next_turn} = [ @_ ];
+sub set_next_changes {
+    my ( $self, $changes ) = @_;
+    $self->{__t_next_changes} = $changes;
 }
 
 
-sub turn {
+sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    my @org_turn = $self->SUPER::turn( $turn_num, $turn_data );
-    return @org_turn unless defined $self->{__t_next_turn};
+    unless ( defined $self->{__t_next_changes} ) {
+        my $real_changes = $self->SUPER::turn_body( $turn_num, $turn_data );
+        return $real_changes;
+    }
 
-    my @data = @{ $self->{__t_next_turn} };
-    $self->{__t_next_turn} = undef;
-    return ( @data );
+    my %changes = %{ $self->{__t_next_changes} };
+    $self->{__t_next_changes} = undef;
+    return \%changes;
 }
 
 

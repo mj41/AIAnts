@@ -55,7 +55,10 @@ $game->set_input(q(
     w 1 1
     w 7 2
 ));
-$bot->set_next_turn( [ 1, 2, 'S' ] );
+$bot->set_next_changes({
+    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+    '2,2'     => [        1,  1,  2,  'S',   2,   2 ]
+});
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
@@ -75,7 +78,10 @@ $game->set_input(q(
     f 0 1
     w 4 2
 ));
-$bot->set_next_turn( [ 2, 2, 'S' ] );
+$bot->set_next_changes({
+    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+    '3,2'     => [        1,  2,  2,  'S',   3,   2 ]
+});
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o o o . . . . . .

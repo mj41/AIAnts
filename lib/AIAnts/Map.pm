@@ -363,6 +363,30 @@ sub set {
     return 1;
 }
 
+=head2 update_new_after_turn
+
+Optimized version of updating newly explored area from turn data.
+
+=cut
+
+sub update_new_after_turn {
+    my ( $self, $m_new, $turn_data ) = @_;
+
+    my $o_bits_explored = $self->{o_bits}{'explored'};
+    my $o_bits_water = $self->{o_bits}{'water'};
+
+    my $map = $self->{m};
+    foreach my $pos ( @$m_new ) {
+        my ( $x, $y ) = @$pos;
+        my $str_pos = "$x,$y";
+        $map->[$x][$y] |= $o_bits_explored;
+        if ( exists $turn_data->{w}{$str_pos} ) {
+            $map->[$x][$y] |= $o_bits_water;
+        }
+    }
+    return 1;
+}
+
 =head2 pos_plus
 
 Sum positions A and distance D to get x, y on map (no behind map borders).
