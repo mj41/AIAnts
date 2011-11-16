@@ -59,7 +59,7 @@ $game->set_input(q(
 ));
 $bot->set_next_changes({
     # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
-    '2,2'     => [        1,  1,  2,  'S',   2,   2 ]
+    '3,2'     => [        1,  1,  2,  'S',   2,   2 ]
 });
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
@@ -80,17 +80,17 @@ $game->set_input(q(
     a 2 2 0
     f 2 0
     w 4 2
-    f 1 3
-    h 2 4
+    f 1 4
+    h 2 4 0
 ));
 $bot->set_next_changes({
-    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
-    '3,2'     => [        1,  2,  2,  'S',   3,   2 ]
+    # $x,$y   => [ $ant_num, $x, $y ]
+    '3,2'     => [        1,  2,  2 ]
 });
 $game->do_turn;
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o o o . . . . . .
-o % o f o . . . . .
+o % o o f . . . . .
 f o a o h . . . . .
 . o o o . . . . . .
 . . % . . . . . . .
@@ -99,8 +99,43 @@ f o a o h . . . . .
 . . % . . . . . . .
 MAP_END
 
-# Test bot->map internals.
 my $map_obj = $game->bot->map;
+
+# one turn data
+is_deeply(
+    $map_obj->{otd}{food},
+    {
+        '2,0' => [ 2, 0 ],
+        '1,4' => [ 1, 4 ],
+    },
+    'otd food'
+);
+is_deeply(
+    $map_obj->{otd}{hive},
+    { '2,4' => [ 2, 4, 0 ] },
+    'otd hive'
+);
+is_deeply(
+    $map_obj->{otd}{ant},
+    { '2,2' => [ 2, 2, 0 ] },
+    'otd ant'
+);
+
+
+is_deeply(
+    [ $map_obj->get_nearest_free_food( 2,2, {} ) ],
+    [ 2,0 ],
+    'get_nearest_free_food'
+);
+
+is_deeply(
+    [ $map_obj->get_nearest_free_food( 2,2, { "2,0" => 2 } ) ],
+    [ 1,4 ],
+    'get_nearest_free_food 2'
+);
+
+
+# Test bot->map internals.
 
 my $m_cch = $map_obj->vis_cache_on_map( $game->bot->map->{vr}{m_cch}, undef, 1 );
 my $mx = $#$m_cch;

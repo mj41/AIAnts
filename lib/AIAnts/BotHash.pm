@@ -128,7 +128,7 @@ Main part of turn processing. Should return hash ref with
 
 inside if ant moves or
 
- # "$x,$y"   => [ $ant_num, $x, $y, $dir, undef, undef ]
+ # "$x,$y"   => [ $ant_num, $x, $y ]
 
 if not.
 

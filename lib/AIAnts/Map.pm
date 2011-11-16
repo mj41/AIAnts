@@ -366,7 +366,7 @@ sub set {
 
     # hive, ant, corpse
     if ( defined $owner ) {
-        $self->{otd}{$type}{"$x,$y"} = [ $x, $y, $owner ];
+        $self->{otd}{$type}{"$x,$y"} = [ $x, $y, $owner+0 ];
 
     # food
     } elsif ( $type ne 'water' && $type ne 'explored' ) {
@@ -410,10 +410,9 @@ sub init_from_turn_raw {
         }
     }
 
-    my $o_bits_food = $self->{o_bits}{'food'};
     foreach my $data ( values %{$turn_data->{food}} ) {
         ( $x, $y ) = @$data;
-        $map->[$x][$y] |= $o_bits_food;
+        $self->set('food', $x, $y );
     }
 
     foreach my $data ( values %{$turn_data->{hive}} ) {
@@ -571,7 +570,7 @@ sub dist {
         }
     }
 
-    return( $dx, $dir_x, $dy, $dir_y );
+    return ( $dx, $dir_x, $dy, $dir_y );
 }
 
 
@@ -594,6 +593,34 @@ sub set_explored {
         next if $self->{m}[$x][$y] & $explored_bit;
         $self->{m}[$x][$y] |= $explored_bit;
     }
+}
+
+=head2
+
+Return position of neerest food without attached ant to it.
+
+=cut
+
+sub get_nearest_free_food {
+    my ( $self, $ant_x, $ant_y, $food2ant ) = @_;
+
+    my ( $Fx, $Fy );
+    my $foods = $self->{otd}{food};
+    my $min_dist = 1000; # max should be 200 + 200
+    foreach my $food_pos ( values %$foods ) {
+        my ( $food_x, $food_y ) = @$food_pos;
+        next if exists $food2ant->{"$food_x,$food_y"};
+
+        my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $ant_x, $ant_y, $food_x, $food_y );
+        my $dist = $dx + $dy;
+        next unless $dist < $min_dist;
+
+        $min_dist = $dist;
+        $Fx = $food_x;
+        $Fy = $food_y;
+    }
+
+    return ( $Fx, $Fy );
 }
 
 =head1 Some notes
