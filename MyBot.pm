@@ -26,6 +26,8 @@ sub setup {
     $self->SUPER::setup( @_ );
 
     $self->{ant2role} = {};
+    $self->{ant_goal} = {};
+    $self->{food2ant} = {};
 }
 
 =head2 get_ant_role
@@ -50,6 +52,83 @@ sub new_ant_created {
     $self->{ant2role}{$ant_num} = $self->get_ant_role( $ant_num );
 }
 
+
+sub set_ant_goal {
+    my ( $self, $ant_num, $ant_x, $ant_y, $used ) = @_;
+
+    my $ant_role = $self->{ant2role}{ $ant_num };
+    my ( $x, $y );
+
+    # food
+    ( $x, $y ) = $self->{m}->get_nearest_free_food( $ant_x, $ant_y, $self->{food2ant} );
+    if ( defined $x ) {
+        $self->{food2ant}{"$x,$y"} = $ant_num;
+        $self->{ant2goal}{$ant_num} = {
+            type => 'food',
+            pos => [ $x, $y ],
+            turns => 20,
+        };
+        $self->log("goal ant $ant_num new 'food' at $x,$y\n") if $self->{log};
+        return 1;
+    }
+
+    # go (explore)
+    while ( 1 ) {
+        $x = $ant_x + (int rand 31) - 15;
+        $y = $ant_y + (int rand 31) - 15;
+        last if $self->{m}->valid_not_used_pos( $x, $y, $used );
+    }
+
+    $self->{ant2goal}{$ant_num} = {
+        type => 'go',
+        pos => [ $x, $y ],
+        turns => 25,
+    };
+    $self->log("goal ant $ant_num new 'go' at $x,$y\n") if $self->{log};
+    return 1;
+}
+
+
+sub goal_still_valid {
+    my ( $self, $ant_num, $ant_x, $ant_y ) = @_;
+
+    my $goal = $self->{ant2goal}{$ant_num};
+    if ( $goal->{turns} <= 0 ) {
+        $self->log("goal ant $ant_num turn limit reached\n") if $self->{log};
+        return 0;
+    }
+
+    my $type = $goal->{type};
+    my ( $x, $y ) = @{ $goal->{pos} };
+
+    # food
+    if ( $type eq 'food' ) {
+        return 1 if $self->{m}->food_exists($x,$y);
+        $self->log("goal ant $ant_num deleted - no food on $x,$y\n") if $self->{log};
+        return 0;
+
+    # go
+    } elsif ( $type eq 'go' ) {
+        return 1 if $x != $ant_x || $y != $ant_y;
+        $self->log("goal ant $ant_num deleted - on postion on $x,$y\n") if $self->{log};
+        return 0;
+    }
+
+    $self->log("goal ant $ant_num unknown type '$type'\n") if $self->{log};
+    return 1;
+}
+
+
+sub step_to_goal {
+    my ( $self, $ant_num, $ant_x, $ant_y, $used, $turn_data ) = @_;
+
+    my $goal = $self->{ant2goal}{$ant_num};
+    $goal->{turns}--;
+    my ( $goal_x, $goal_y ) = @{ $goal->{pos} };
+    return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used );
+}
+
+
 =head2 turn_body
 
 Main part of turn processing. Should return hash ref with
@@ -67,51 +146,44 @@ if not.
 sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    my $dirs = [ 'N', 'E', 'S', 'W' ];
+    my $used = {};
+    foreach my $data ( values %{$turn_data->{ant}} ) {
+        my ( $x, $y, $owner ) = @$data;
+        next unless $owner == 0;
+        $used->{"$x,$y"} = 1;
+    }
 
     my $changes = {};
-    my $map_obj = $self->{m};
-    my $map = $map_obj->{m};
-    my $water_bit = $map_obj->{o_bits}{water};
     foreach my $data ( values %{$turn_data->{ant}} ) {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
         my $ant_num = $self->get_ant_num( $x, $y );
-        my $dir;
-        my ( $Dx, $Dy, $Nx, $Ny );
-        my $dir_num = int rand 3;
-        while ( 1 ) {
-            $dir = $dirs->[ $dir_num ];
-            if ( $dir eq 'N' ) {
-                $Dx = -1;
-                $Dy =  0;
-            } elsif ( $dir eq 'E' ) {
-                $Dx =  0;
-                $Dy =  1;
-            } elsif ( $dir eq 'S' ) {
-                $Dx =  1;
-                $Dy =  0;
-            } elsif ( $dir eq 'W' ) {
-                $Dx =  0;
-                $Dy = -1;
-            }
 
-            ( $Nx, $Ny ) = $map_obj->pos_plus( $x, $y, $Dx, $Dy );
-            if ( (not $map->[$Nx][$Ny] & $water_bit)
-                  && (not exists $changes->{"$Nx,$Ny"})
-                  && (not exists $turn_data->{ant}{"$Nx,$Ny"})
-               )
-            {
-                $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];
-                last;
-            }
-            $dir_num++;
-            last if $dir_num == 4;
+        if ( not exists $self->{ant2goal}{$ant_num} ) {
+            $self->log("goal ant $ant_num setting the first goal\n") if $self->{log};
+            $self->set_ant_goal( $ant_num, $x, $y, $used );
+
+        } elsif ( not $self->goal_still_valid($ant_num,$x,$y) ) {
+            $self->log("goal ant $ant_num no valid, setting new goal set\n") if $self->{log};
+            $self->set_ant_goal( $ant_num, $x, $y, $used );
         }
-        $changes->{"$x,$y"} = [ $ant_num, $x, $y, $dir, undef, undef ] if $dir_num == 4;
+        my ( $dir, $Nx, $Ny ) = $self->step_to_goal( $ant_num, $x, $y, $used, $turn_data );
+
+        if ( (not defined $dir) || ($Nx == $x && $Ny == $y) ) {
+            $self->log("move ant $ant_num stay on $x,$y\n") if $self->{log};
+            $changes->{"$x,$y"} = [ $ant_num, $x, $y ];
+            $used->{"$x,$y"} = 2;
+
+        } else {
+            $self->log("move ant $ant_num to $Nx,$Ny\n") if $self->{log};
+            $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];
+            delete $used->{"$x,$y"};
+            $used->{"$Nx,$Ny"} = 2;
+        }
     }
 
+    #use Data::Dumper; $self->log( Dumper( $self->{ant2goal} ) ); die if $turn_num > 3;
     return $changes;
 }
 
