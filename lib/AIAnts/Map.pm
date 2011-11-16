@@ -375,6 +375,17 @@ sub set {
     return 1;
 }
 
+=head2 food_exists
+
+Return 1 if food exists on provided position.
+
+=cut
+
+sub food_exists {
+    my ( $self, $x, $y ) = @_;
+    return ( exists $self->{otd}{food}{"$x,$y"} );
+}
+
 =head2 init_from_turn_raw
 
 Initialize map - internal.
@@ -571,6 +582,57 @@ sub dist {
     }
 
     return ( $dx, $dir_x, $dy, $dir_y );
+}
+
+=head2 valid_not_used_pos
+
+Return 1 if position is not water and not used.
+
+=cut
+
+sub valid_not_used_pos {
+    my ( $self, $x, $y, $used ) = @_;
+
+    return 0 if $self->{m}[$x][$y] & $self->{o_bits}{water};
+    return 0 if exists $used->{"$x,$y"};
+    return 1;
+}
+
+=head2 dir_from_to
+
+Get direction to get from position A to position B. Also return new position after move.
+Skip positions in hash ref 'used' parameter.
+
+=cut
+
+sub dir_from_to {
+    my ( $self, $Ax, $Ay, $Bx, $By, $used ) = @_;
+
+    my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $Ax, $Ay, $Bx, $By );
+    return () if $dx == 0 && $dy == 0;
+
+    my ( $dir, $Nx, $Ny );
+
+    # longer
+    if ( $dx >= $dy ) {
+        $dir = $dir_x == -1 ? 'N' : 'S'
+    } else {
+        $dir = $dir_y == -1 ? 'W' : 'E';
+    }
+    ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
+    return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used );
+
+
+    # opposit (shorten)
+    if ( $dx < $dy ) {
+        $dir = $dir_x == -1 ? 'N' : 'S'
+    } else {
+        $dir = $dir_y == -1 ? 'W' : 'E';
+    }
+    ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
+    return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used );
+
+    return ();
 }
 
 

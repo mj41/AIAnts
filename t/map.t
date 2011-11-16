@@ -79,15 +79,31 @@ is ( $y, 1, 'pos_dir_step E y' );
 # v
 # x
 
+is_deeply [ $mp->dist( 0,0, 0,0 ) ],  [ 0,0, 0,0 ], 'dist 0';
+
 is_deeply [ $mp->dist( 0,0, 1,0 ) ],  [ 1,1, 0,0 ], 'dist x';
 is_deeply [ $mp->dist( 0,0, 0,1 ) ],  [ 0,0, 1,1 ], 'dist y';
 is_deeply [ $mp->dist( 0,0, 1,1 ) ],  [ 1,1, 1,1 ], 'dist x,y';
 
-is_deeply [ $mp->dist( 1,0, 0,0 ) ],  [ 1,-1,  0,0 ],  'op dist x';
-is_deeply [ $mp->dist( 0,1, 0,0 ) ],  [ 0,0,   1,-1 ], 'op dist y';
-is_deeply [ $mp->dist( 1,1, 0,0 ) ],  [ 1,-1,  1,-1 ], 'op dist x,y';
+is_deeply [ $mp->dist( 1,0, 0,0 ) ],  [ 1,-1,  0,0 ],  'dist op x';
+is_deeply [ $mp->dist( 0,1, 0,0 ) ],  [ 0,0,   1,-1 ], 'dist op y';
+is_deeply [ $mp->dist( 1,1, 0,0 ) ],  [ 1,-1,  1,-1 ], 'dist op x,y';
 
 is_deeply [ $mp->dist( 0,0, 0,2 ) ],  [ 0,0,   1,-1 ], 'dist y over';
-is_deeply [ $mp->dist( 0,2, 0,0 ) ],  [ 0,0,   1, 1 ], 'op dist y over';
+is_deeply [ $mp->dist( 0,2, 0,0 ) ],  [ 0,0,   1, 1 ], 'dist op y over';
+
+
+# dir_from_to
+is_deeply [ $mp->dir_from_to( 0,0, 0,0 ) ], [], 'dir_from_to none';
+is_deeply [ $mp->dir_from_to( 0,0, 1,0 ) ], [ 'S',1,0 ], 'dir_from_to x';
+is_deeply [ $mp->dir_from_to( 1,0, 0,0 ) ], [ 'N',0,0 ], 'dir_from_to op x';
+is_deeply [ $mp->dir_from_to( 0,1, 0,2 ) ], [ 'E',0,2 ], 'dir_from_to y';
+is_deeply [ $mp->dir_from_to( 0,2, 0,1 ) ], [ 'W',0,1 ], 'dir_from_to op y';
+
+is_deeply [ $mp->dir_from_to( 0,1, 1,2 ) ], [ 'S',1,1 ], 'dir_from_to x=y, x';
+is_deeply [ $mp->dir_from_to( 1,2, 0,1 ) ], [ 'N',0,2 ], 'dir_from_to op x=y, x';
+
+is_deeply [ $mp->dir_from_to( 0,2, 0,0 ) ], [ 'E',0,0 ], 'dir_from_to y over';
+is_deeply [ $mp->dir_from_to( 0,0, 0,2 ) ], [ 'W',0,2 ], 'dir_from_to op y over';
 
 done_testing();
