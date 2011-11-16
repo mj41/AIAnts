@@ -501,6 +501,37 @@ sub pos_plus {
     return ( $x, $y );
 }
 
+=head2 pos_dir_step
+
+Get new position if moved one step in provided direction.
+
+ my ( $Nx, $Ny ) = $map_obj->pos_dir_step( 2, 1, 'W' ); # 1, 1
+
+=cut
+
+sub pos_dir_step {
+    my ( $self, $Ax, $Ay, $dir ) = @_;
+
+    if ( $dir eq 'N' ) {
+        $Ax--;
+        $Ax = $self->{mx} if $Ax < 0;
+
+    } elsif ( $dir eq 'E' ) {
+        $Ay++;
+        $Ay = 0 if $Ay > $self->{my};
+
+    } elsif ( $dir eq 'S' ) {
+        $Ax++;
+        $Ax = 0 if $Ax > $self->{mx};
+
+    } elsif ( $dir eq 'W' ) {
+        $Ay--;
+        $Ay = $self->{my} if $Ay < 0;
+    }
+    return ( $Ax, $Ay );
+}
+
+
 =head2 set_explored
 
 Set positions inside ant viewradius around provided position to 'explored'.
