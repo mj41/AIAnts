@@ -74,4 +74,20 @@ is ( $x, 0, 'pos_dir_step E x' );
 is ( $y, 1, 'pos_dir_step E y' );
 
 
+# ---> y  [0,0] [0,1] [0,2]
+# |       [1,0] [1,1] [1,2]
+# v
+# x
+
+is_deeply [ $mp->dist( 0,0, 1,0 ) ],  [ 1,1, 0,0 ], 'dist x';
+is_deeply [ $mp->dist( 0,0, 0,1 ) ],  [ 0,0, 1,1 ], 'dist y';
+is_deeply [ $mp->dist( 0,0, 1,1 ) ],  [ 1,1, 1,1 ], 'dist x,y';
+
+is_deeply [ $mp->dist( 1,0, 0,0 ) ],  [ 1,-1,  0,0 ],  'op dist x';
+is_deeply [ $mp->dist( 0,1, 0,0 ) ],  [ 0,0,   1,-1 ], 'op dist y';
+is_deeply [ $mp->dist( 1,1, 0,0 ) ],  [ 1,-1,  1,-1 ], 'op dist x,y';
+
+is_deeply [ $mp->dist( 0,0, 0,2 ) ],  [ 0,0,   1,-1 ], 'dist y over';
+is_deeply [ $mp->dist( 0,2, 0,0 ) ],  [ 0,0,   1, 1 ], 'op dist y over';
+
 done_testing();

@@ -532,6 +532,49 @@ sub pos_dir_step {
 }
 
 
+=head2 dist
+
+The x and y distance between A and B positions and x and y direction to get from A to B.
+
+=cut
+
+sub dist {
+    my ( $self, $Ax, $Ay, $Bx, $By ) = @_;
+
+    my ( $dx, $dir_x );
+    if ( $Ax == $Bx ) {
+        $dx = 0;
+        $dir_x = 0;
+
+    } else {
+        $dx = abs( $Bx - $Ax );
+        my $dx2 = $self->{mx}+1 - $dx;
+        $dir_x = ( $Bx > $Ax ) ? 1 : -1;
+        if ( $dx2 < $dx ) {
+            $dx = $dx2;
+            $dir_x *= -1;
+        }
+    }
+
+    my ( $dy, $dir_y );
+    if ( $Ay == $By ) {
+        $dy = 0;
+        $dir_y = 0;
+
+    } else {
+        $dy = abs( $By - $Ay );
+        my $dy2 = $self->{my}+1 - $dy;
+        $dir_y = ( $By > $Ay ) ? 1 : -1;
+        if ( $dy2 < $dy ) {
+            $dy = $dy2;
+            $dir_y *= -1;
+        }
+    }
+
+    return( $dx, $dir_x, $dy, $dir_y );
+}
+
+
 =head2 set_explored
 
 Set positions inside ant viewradius around provided position to 'explored'.
