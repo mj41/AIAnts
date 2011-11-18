@@ -5,6 +5,8 @@ use warnings;
 
 use base 'AIAnts::BotHash';
 
+use Data::Dumper;
+
 =head1 NAME
 
 MyBot for L<AIAnts> game.
@@ -61,6 +63,7 @@ sub set_ant_goal {
 
     # food
     ( $x, $y ) = $self->{m}->get_nearest_free_food( $ant_x, $ant_y, $self->{food2ant} );
+    $self->log("goal ant $ant_num not 'food' near ant $ant_x,$ant_y\n") if $self->{log};
     if ( defined $x ) {
         $self->{food2ant}{"$x,$y"} = $ant_num;
         $self->{ant2goal}{$ant_num} = {
@@ -73,9 +76,13 @@ sub set_ant_goal {
     }
 
     # go (explore)
+    my $map_obj = $self->{m};
     while ( 1 ) {
-        $x = $ant_x + (int rand 31) - 15;
-        $y = $ant_y + (int rand 31) - 15;
+        ( $x, $y ) = $map_obj->pos_plus(
+            $ant_x, $ant_y,
+            (int rand 31) - 15,
+            (int rand 31) - 15
+        );
         last if $self->{m}->valid_not_used_pos( $x, $y, $used );
     }
 
@@ -83,6 +90,7 @@ sub set_ant_goal {
         type => 'go',
         pos => [ $x, $y ],
         turns => 25,
+        visited => {},
     };
     $self->log("goal ant $ant_num new 'go' at $x,$y\n") if $self->{log};
     return 1;
@@ -105,6 +113,7 @@ sub goal_still_valid {
     if ( $type eq 'food' ) {
         return 1 if $self->{m}->food_exists($x,$y);
         $self->log("goal ant $ant_num deleted - no food on $x,$y\n") if $self->{log};
+        delete $self->{food2ant}{"$x,$y"};
         return 0;
 
     # go
@@ -125,7 +134,12 @@ sub step_to_goal {
     my $goal = $self->{ant2goal}{$ant_num};
     $goal->{turns}--;
     my ( $goal_x, $goal_y ) = @{ $goal->{pos} };
-    return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used );
+    my ( $dir, $Nx, $Ny ) = $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{visited} );
+
+    return () unless defined $dir;
+
+    $self->{visited}{"$Nx,$Ny"} = 1;
+    return ( $dir, $Nx, $Ny );
 }
 
 
@@ -145,6 +159,10 @@ if not.
 
 sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
+
+    $self->log( "turn $turn_num\n" ) if $self->{log};
+    #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
+    #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
     my $used = {};
     foreach my $data ( values %{$turn_data->{ant}} ) {
@@ -183,6 +201,7 @@ sub turn_body {
         }
     }
 
+    $self->log( "\n" ) if $self->{log};
     #use Data::Dumper; $self->log( Dumper( $self->{ant2goal} ) ); die if $turn_num > 3;
     return $changes;
 }

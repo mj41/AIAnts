@@ -37,8 +37,8 @@ sub setup {
 
     $self->{turn_num} = 0;
 
-    $self->{pos2ant_num} = {};
     $self->{max_ant_num} = 0;
+    $self->{pos2ant_num} = {};
     $self->{ant_num2prev_pos} = {};
 
     $self->{m_new} = [];
@@ -74,6 +74,9 @@ sub turn {
     }
 
     my $changes = $self->turn_body( $turn_num, $turn_data );
+
+    $self->{pos2ant_num} = {};
+    $self->{ant_num2prev_pos} = {};
 
     my @orders = ();
     foreach my $change_data ( values %$changes ) {
@@ -177,6 +180,7 @@ sub set_area_diff {
         my ( $prev_x, $prev_y, $prev_dir ) = @$prev_info;
         foreach my $Dpos ( @{ $m_cch_move->{$prev_dir}{a} } ) {
             ( $Nx, $Ny ) = $map_obj->pos_plus( $prev_x, $prev_y, $Dpos->[0], $Dpos->[1] );
+            #print "ant $ant_num prev $prev_x,$prev_y -> $x, $y + dpos $Dpos->[0], $Dpos->[1] = $Nx, $Ny\n";
             next if exists $processed->{"$Nx,$Ny"};
             $processed->{"$Nx,$Ny"} = 1;
             push @$diff_a, [ $Nx, $Ny ];

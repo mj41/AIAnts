@@ -591,15 +591,17 @@ sub dist {
 
 =head2 valid_not_used_pos
 
-Return 1 if position is not water and not used.
+Return 1 if position is not water and not used and not already visited.
 
 =cut
 
 sub valid_not_used_pos {
-    my ( $self, $x, $y, $used ) = @_;
+    my ( $self, $x, $y, $used, $visited ) = @_;
 
     return 0 if $self->{m}[$x][$y] & $self->{o_bits}{water};
-    return 0 if exists $used->{"$x,$y"};
+    my $pos_str = "$x,$y";
+    return 0 if exists $visited->{$pos_str};
+    return 0 if exists $used->{$pos_str};
     return 1;
 }
 
@@ -611,31 +613,53 @@ Skip positions in hash ref 'used' parameter.
 =cut
 
 sub dir_from_to {
-    my ( $self, $Ax, $Ay, $Bx, $By, $used ) = @_;
+    my ( $self, $Ax, $Ay, $Bx, $By, $used, $visited ) = @_;
 
     my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $Ax, $Ay, $Bx, $By );
     return () if $dx == 0 && $dy == 0;
 
     my ( $dir, $Nx, $Ny );
 
+    my @dirs;
+
     # longer
     if ( $dx >= $dy ) {
-        $dir = $dir_x == -1 ? 'N' : 'S'
+        if ( $dir_x == -1 ) {
+           $dirs[0] = 'N';
+           $dirs[2] = 'S';
+        } else {
+           $dirs[0] = 'S';
+           $dirs[2] = 'N';
+        }
+        if ( $dir_y == -1 ) {
+            $dirs[1] = 'W';
+            $dirs[3] = 'E';
+        } else {
+            $dirs[1] = 'E';
+            $dirs[3] = 'W';
+        }
     } else {
-        $dir = $dir_y == -1 ? 'W' : 'E';
+        if ( $dir_y == -1 ) {
+           $dirs[0] = 'W';
+           $dirs[2] = 'E';
+        } else {
+           $dirs[0] = 'E';
+           $dirs[2] = 'W';
+        }
+        if ( $dir_x == -1 ) {
+            $dirs[1] = 'N';
+            $dirs[3] = 'S';
+        } else {
+            $dirs[1] = 'S';
+            $dirs[3] = 'N';
+        }
     }
-    ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
-    return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used );
 
-
-    # opposit (shorten)
-    if ( $dx < $dy ) {
-        $dir = $dir_x == -1 ? 'N' : 'S'
-    } else {
-        $dir = $dir_y == -1 ? 'W' : 'E';
+    foreach my $num (0..3) {
+        my $dir = $dirs[ $num ];
+        ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
+        return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used, $visited );
     }
-    ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
-    return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used );
 
     return ();
 }
