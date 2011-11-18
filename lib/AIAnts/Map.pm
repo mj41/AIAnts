@@ -118,7 +118,8 @@ sub get_radius_cache {
     foreach my $x ( 0..$vm_distance ) {
         foreach my $y ( 0..$vm_distance ) {
             next if $x == 0 && $y == 0;
-            if ( ($x*$x + $y*$y) < $radius2 ) {
+            # <= is from game specification
+            if ( ($x*$x + $y*$y) <= $radius2 ) {
                 push @$r_map, [ +$x, +$y ];
                 push @$r_map, [ -$x, +$y ];
                 push @$r_map, [ +$x, -$y ];
@@ -237,7 +238,6 @@ sub vis_cache_on_map {
     if ( $opts{negative} ) {
         $middle = int( ($size+1) / 2 );
         return [] unless $middle > 0;
-        #print "$size $middle\n";
     }
 
     my $h_map = $self->get_empty_map( $size, $size );
@@ -391,62 +391,26 @@ sub food_exists {
     return ( exists $self->{otd}{food}{"$x,$y"} );
 }
 
-=head2 init_from_turn_raw
+=head2 process_new_initial_pos
 
-Initialize map - internal.
+Initialize map on new initial position.
 
 =cut
 
-sub init_from_turn_raw {
-    my ( $self, $turn_data, $explored_and_water ) = @_;
+sub process_new_initial_pos {
+    my ( $self, $ant_x, $ant_y, $turn_data ) = @_;
 
-    my ( $x, $y, $owner );
+    $self->set_explored( $ant_x, $ant_y );
+
     my $map = $self->{m};
-
-    # turn == 1
-    if ( $explored_and_water ) {
-        foreach my $data ( values %{$turn_data->{ant}} ) {
-            ( $x, $y, $owner ) = @$data;
-            $self->set('ant', $x, $y, $owner );
-            next unless $owner == 0;
-            $self->set_explored( $x, $y );
-        }
-
-        my $o_bits_water = $self->{o_bits}{'water'};
-        foreach my $data ( values %{$turn_data->{water}} ) {
-            ( $x, $y ) = @$data;
-            $map->[$x][$y] |= $o_bits_water;
-        }
-
-    # turn >= 2
-    } else {
-        foreach my $data ( values %{$turn_data->{ant}} ) {
-            ( $x, $y, $owner ) = @$data;
-            $self->set('ant', $x, $y, $owner );
-        }
-    }
-
-    foreach my $data ( values %{$turn_data->{food}} ) {
+    my $o_bits_water = $self->{o_bits}{'water'};
+    my ( $x, $y );
+    foreach my $data ( values %{$turn_data->{water}} ) {
         ( $x, $y ) = @$data;
-        $self->set('food', $x, $y );
+        $map->[$x][$y] |= $o_bits_water;
     }
 
-    foreach my $data ( values %{$turn_data->{hive}} ) {
-        ( $x, $y, $owner ) = @$data;
-        $self->set('hive', $x, $y, $owner );
-    }
     return 1;
-}
-
-=head2 init_after_first_turn
-
-Initialize map before first turn.
-
-=cut
-
-sub init_after_first_turn {
-    my ( $self, $turn_data ) = @_;
-    return $self->init_from_turn_raw( $turn_data, 1 );
 }
 
 
@@ -484,8 +448,23 @@ sub update_new_after_turn {
         }
     }
 
-    # set otd
-    return $self->init_from_turn_raw( $turn_data, 0 );
+    # set new otd
+    my ( $x, $y, $owner );
+    foreach my $data ( values %{$turn_data->{ant}} ) {
+        ( $x, $y, $owner ) = @$data;
+        $self->set('ant', $x, $y, $owner );
+    }
+
+    foreach my $data ( values %{$turn_data->{food}} ) {
+        ( $x, $y ) = @$data;
+        $self->set('food', $x, $y );
+    }
+
+    foreach my $data ( values %{$turn_data->{hive}} ) {
+        ( $x, $y, $owner ) = @$data;
+        $self->set('hive', $x, $y, $owner );
+    }
+    return 1;
 }
 
 =head2 pos_plus
@@ -674,13 +653,13 @@ Set positions inside ant viewradius around provided position to 'explored'.
 =cut
 
 sub set_explored {
-    my ( $self, $bot_x, $bot_y ) = @_;
+    my ( $self, $ant_x, $ant_y ) = @_;
 
     # todo - optimize when moving
 
     my $explored_bit = $self->{o_bits}{explored};
     foreach my $pos ( @{ $self->{vr}{m_cch} } ) {
-        my ( $x, $y ) = $self->pos_plus( $bot_x, $bot_y, $pos->[0], $pos->[1] );
+        my ( $x, $y ) = $self->pos_plus( $ant_x, $ant_y, $pos->[0], $pos->[1] );
         next if $self->{m}[$x][$y] & $explored_bit;
         $self->{m}[$x][$y] |= $explored_bit;
     }

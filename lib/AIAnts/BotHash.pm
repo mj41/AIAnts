@@ -41,6 +41,7 @@ sub setup {
     $self->{pos2ant_num} = {};
     $self->{ant_num2prev_pos} = {};
 
+    $self->{m_initial_pos} = {};
     $self->{m_new} = [];
 }
 
@@ -66,12 +67,21 @@ Return array of array refs with commands (ants movements).
 sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    if ( $turn_num == 1 ) {
-        $self->init_after_first_turn( $turn_data );
-    } else {
-        $self->set_area_diff( $turn_data );
-        $self->update_on_turn_begin( $turn_data );
+    foreach my $data ( values %{$turn_data->{ant}} ) {
+        my ( $x, $y, $owner ) = @$data;
+        next unless $owner == 0;
+
+        unless ( exists $self->{pos2ant_num}{"$x,$y"} ) {
+            $self->init_new_ant( $x, $y );
+            unless ( exists $self->{m_initial_pos}{"$x,$y"} ) {
+                $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
+                $self->{m_initial_pos}{"$x,$y"} = 1;
+            }
+        }
     }
+    $self->set_area_diff( $turn_data );
+    $self->update_on_turn_begin( $turn_data );
+
 
     my $changes = $self->turn_body( $turn_num, $turn_data );
 
@@ -96,19 +106,16 @@ sub turn {
     return @orders;
 }
 
-=head2 get_ant_num
+=head2 init_new_ant
 
-Return ant number for given ant position. Generate new if ant on given position not found.
-Use 'pos2ant_num' attribute updated in 'turn' method.
+Initialize new ant.
 
 =cut
 
-sub get_ant_num {
+sub init_new_ant {
     my ( $self, $x, $y ) = @_;
-    my $pos_str = "$x,$y";
-    return $self->{pos2ant_num}{$pos_str} if exists $self->{pos2ant_num}{$pos_str};
     $self->{max_ant_num}++;
-    $self->{pos2ant_num}{$pos_str} = $self->{max_ant_num};
+    $self->{pos2ant_num}{"$x,$y"} = $self->{max_ant_num};
     $self->new_ant_created( $self->{max_ant_num} );
     return $self->{max_ant_num};
 }
@@ -142,18 +149,6 @@ sub turn_body {
     return {};
 }
 
-=head2 init_after_first_turn
-
-Initialization after first run. Set e.g. full area explored and all water
-inside ants viewareas.
-
-=cut
-
-sub init_after_first_turn {
-    my ( $self, $turn_data ) = @_;
-    return $self->{m}->init_after_first_turn( $turn_data );
-}
-
 =head2 set_area_diff
 
 Set 'm_new' array of positions on map, which ant newly see because of their moves.
@@ -173,7 +168,7 @@ sub set_area_diff {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
-        my $ant_num = $self->get_ant_num( $x, $y );
+        my $ant_num = $self->{pos2ant_num}{"$x,$y"};
         next unless exists $self->{ant_num2prev_pos}{ $ant_num };
 
         my $prev_info = $self->{ant_num2prev_pos}{ $ant_num };

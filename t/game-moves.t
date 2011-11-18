@@ -18,7 +18,7 @@ $game->set_input(q(
     rows 8
     cols 10
     turns 50
-    viewradius2 5
+    viewradius2 4
     attackradius2 3
     spawnradius2 1
     player_seed 42
@@ -36,18 +36,6 @@ is( $game->bot->map->dump(1), <<MAP_END, 'setup' );
 . . . . . . . . . .
 MAP_END
 
-=pod
-
-. f . . . . . . . .
-. . a . . . . . . .
-. . h . w . . . . .
-. f . . w w . . . .
-. . . w w . . . f .
-. . . . w . . h . .
-. . . . . . . a . .
-. . . . . . . . f .
-
-=cut
 
 # prepare turn 1 game output and bot orders
 $game->set_input(q(
@@ -81,19 +69,42 @@ MAP_END
 
 # Prepare turn 2 game output and bot orders. Receive info about position 2,2
 # where ant just moved.
+
+=pod
+
+Map
+
+. o f o . .
+o % o o f .
+o o a f h .
+. o o o . .
+. . % . . .
+
+Part of map ants see
+
+. . f . . .
+. % o o . .
+o o a f h .
+. o o o . .
+. . % . . .
+
+=cut
+
+# So game should send (in clock order)
 $game->set_input(q(
     a 2 2 0
-    f 2 0
-    w 4 2
-    f 1 4
+    f 0 2
+    f 2 3
     h 2 4 0
+    w 4 2
+    w 1 1
 ));
 $bot->set_next_changes({
-    # $x,$y   => [ $ant_num, $x, $y ]
-    '3,2'     => [        1,  2,  2 ]
+    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+    '2,1'     => [        1,  2,  2,  'W',   2,   1 ]
 });
 
-# Do turn 2. We moved on 2,2 and send we will stay there.
+# Do turn 2. We moved on 2,2 and next stop is 1,2.
 $game->do_turn;
 
 my $map_obj = $game->bot->map;
@@ -112,9 +123,9 @@ MAP_END
 
 
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
-. o o o . . . . . .
-o % o o f . . . . .
-f o a o h . . . . .
+. o f o . . . . . .
+o % o o o . . . . .
+o o a f h . . . . .
 . o o o . . . . . .
 . . % . . . . . . .
 . . . . . . . . . .
@@ -123,12 +134,12 @@ f o a o h . . . . .
 MAP_END
 
 
-# one turn data
+# One turn data after turn 2.
 is_deeply(
     $map_obj->{otd}{food},
     {
-        '2,0' => [ 2, 0 ],
-        '1,4' => [ 1, 4 ],
+        '0,2' => [ 0, 2 ],
+        '2,3' => [ 2, 3 ],
     },
     'otd food'
 );
@@ -146,15 +157,80 @@ is_deeply(
 
 is_deeply(
     [ $map_obj->get_nearest_free_food( 2,2, {} ) ],
-    [ 2,0 ],
+    [ 2,3 ],
     'get_nearest_free_food'
 );
 
 is_deeply(
-    [ $map_obj->get_nearest_free_food( 2,2, { "2,0" => 2 } ) ],
-    [ 1,4 ],
+    [ $map_obj->get_nearest_free_food( 2,2, { "2,3" => 1 } ) ],
+    [ 0,2 ],
     'get_nearest_free_food 2'
 );
+
+
+
+# Prepare turn 3 game output and bot orders. Receive info about position 1,2
+# where ant just moved.
+
+=pod
+
+Game engine phases: move, attack, raze, gather, spawn
+
+Map
+
+. f o o o . . . . .
+o % o o f o . . . .
+f a o o a o f . . h
+o o o o o o . . . .
+. % % . % . . . . .
+
+Part of map ants see
+
+. f o . o . . . . .
+o % o o f o . . . .
+f a o o a o f . . h
+o o o o o o . . . .
+. % . . % . . . . .
+
+=cut
+
+$game->set_input(q(
+    a 2 1 0
+    w 1 1
+    f 0 1
+    w 4 1
+    f 2 0
+    h 2 9 1
+    a 2 4 0
+    f 1 4
+    f 2 6
+    w 4 4
+));
+$bot->set_next_changes({
+    # $x,$y   => [ $ant_num, $x, $y ]
+    '2,1'     => [        1,  2,  1 ],
+    '2,4'     => [        2,  2,  4 ],
+});
+
+# Do turn 3. We moved on 2,1 and set we will stay there.
+$game->do_turn;
+
+is_deeply(
+    $map_obj->{otd}{ant},
+    { '2,1' => [ 2, 1, 0 ], '2,4' => [ 2, 4, 0 ] },
+    'turn 3 - otd ant'
+);
+
+is( $game->bot->map->dump(1), <<MAP_END, 'turn 3' );
+. f o o o . . . . .
+o % o o f o . . . .
+f a o o a o f . . h
+o o o o o o . . . .
+. % % . % . . . . .
+. . . . . . . . . .
+. . . . . . . . . .
+. . % . . . . . . .
+MAP_END
 
 
 # Test bot->map internals.
