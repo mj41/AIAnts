@@ -49,7 +49,7 @@ MAP_END
 
 =cut
 
-
+# prepare turn 1 game output and bot orders
 $game->set_input(q(
     a 1 2 0
     w 1 1
@@ -61,7 +61,12 @@ $bot->set_next_changes({
     # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
     '3,2'     => [        1,  1,  2,  'S',   2,   2 ]
 });
+
+# Do turn 1. Bot is going to process prepared data (receive input and send 'changes').
+# Ant is on position 1,2 and will prepare move 'S' to 2,2.
 $game->do_turn;
+
+# Check bot and map state after turn 1 - new ant on position 1,2
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
 o % a o h . . . . .
@@ -73,9 +78,9 @@ o % a o h . . . . .
 . . % . . . . . . .
 MAP_END
 
-#use Data::Dumper; print Dumper( $game->bot );
 
-# new 2,0 ; 3,1 ; 4,2 ; 3,3; 2;4
+# Prepare turn 2 game output and bot orders. Receive info about position 2,2
+# where ant just moved.
 $game->set_input(q(
     a 2 2 0
     f 2 0
@@ -87,7 +92,25 @@ $bot->set_next_changes({
     # $x,$y   => [ $ant_num, $x, $y ]
     '3,2'     => [        1,  2,  2 ]
 });
+
+# Do turn 2. We moved on 2,2 and send we will stay there.
 $game->do_turn;
+
+my $map_obj = $game->bot->map;
+
+# Checks after turn 2 - ant on position 2,2.
+my $m_new = $map_obj->vis_cache_on_map( $game->bot->{m_new}, padding=>1 );
+is( $map_obj->dump_map( $m_new, 'x' ), <<MAP_END, 'm_new' );
+. . . . . . .
+. . . . . . .
+x . . . x . .
+. x . x . . .
+. . x . . . .
+. . . . . . .
+. . . . . . .
+MAP_END
+
+
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o o o . . . . . .
 o % o o f . . . . .
@@ -99,7 +122,6 @@ f o a o h . . . . .
 . . % . . . . . . .
 MAP_END
 
-my $map_obj = $game->bot->map;
 
 # one turn data
 is_deeply(
@@ -137,8 +159,9 @@ is_deeply(
 
 # Test bot->map internals.
 
-my $m_cch = $map_obj->vis_cache_on_map( $game->bot->map->{vr}{m_cch}, undef, 1 );
-my $mx = $#$m_cch;
+my %vis_conf = ( negative=>1, padding=>1 );
+my $m_cch = $map_obj->vis_cache_on_map( $game->bot->map->{vr}{m_cch}, %vis_conf );
+$vis_conf{size} = $#$m_cch;
 is( $map_obj->dump_map( $m_cch, 'x' ), <<MAP_END, 'm_cch' );
 . . . . . . .
 . . . x . . .
@@ -149,7 +172,8 @@ is( $map_obj->dump_map( $m_cch, 'x' ), <<MAP_END, 'm_cch' );
 . . . . . . .
 MAP_END
 
-my $m_cch_move_a = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{a}, $mx );
+
+my $m_cch_move_a = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{a}, %vis_conf );
 is(  $map_obj->dump_map( $m_cch_move_a, 'a' ), <<MAP_END, 'm_cch_move-E-a' );
 . . . . . . .
 . . . . a . .
@@ -160,7 +184,7 @@ is(  $map_obj->dump_map( $m_cch_move_a, 'a' ), <<MAP_END, 'm_cch_move-E-a' );
 . . . . . . .
 MAP_END
 
-my $m_cch_move_r = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{r}, $mx );
+my $m_cch_move_r = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{r}, %vis_conf );
 is( $map_obj->dump_map( $m_cch_move_r, 'r' ), <<MAP_END, 'm_cch_move-E-r' );
 . . . . . . .
 . . . r . . .

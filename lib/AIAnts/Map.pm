@@ -172,7 +172,7 @@ Get helper move caches for computation with radius and movements.
 sub get_radius_move_caches {
     my ( $self, $r_cch ) = @_;
 
-    my $h_map = $self->vis_cache_on_map( $r_cch, undef, 1 );
+    my $h_map = $self->vis_cache_on_map( $r_cch, negative=>1, padding=>1 );
     my $h_md = int( (scalar @$h_map) / 2 );
 
     my $move_cch = {};
@@ -215,10 +215,11 @@ Make temp map and visualize caches on it.
 =cut
 
 sub vis_cache_on_map {
-    my ( $self, $r_cch, $h_max, $padding ) = @_;
-    $padding //= 0;
+    my ( $self, $r_cch, %opts ) = @_;
+    my $padding = $opts{padding} // 0;
+    my $size = $opts{size} // 0;
 
-    unless ( $h_max ) {
+    unless ( $size ) {
         my $mx = 0;
         my $my = 0;
         foreach my $pos ( @$r_cch ) {
@@ -226,16 +227,20 @@ sub vis_cache_on_map {
             $my = abs($pos->[1]) if abs($pos->[1]) > $my;
         }
 
-        $h_max = $mx;
-        $h_max = $my if $my > $h_max;
-        $h_max = $h_max*2 + 2*$padding;
+        $size = $mx;
+        $size = $my if $my > $size;
+        $size = $size*2 if $opts{negative};
+        $size += 2*$padding;
     }
 
-    my $middle = int( ($h_max+1) / 2 );
-    return '' unless $middle > 0;
-    #print "$h_max $middle\n";
+    my $middle = 0;
+    if ( $opts{negative} ) {
+        $middle = int( ($size+1) / 2 );
+        return [] unless $middle > 0;
+        #print "$size $middle\n";
+    }
 
-    my $h_map = $self->get_empty_map( $h_max, $h_max );
+    my $h_map = $self->get_empty_map( $size, $size );
     foreach my $pos ( @$r_cch ) {
         my ( $x, $y ) = @$pos;
         $h_map->[$x+$middle][$y+$middle] = 1;
