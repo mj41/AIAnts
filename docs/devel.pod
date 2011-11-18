@@ -16,9 +16,8 @@
 
  mkdir aichallenge
  git clone git://github.com/aichallenge/aichallenge.git aichallenge
- cd aichallenge/ants
- ./playgame.py --player_seed 42 --end_wait=0.25 --verbose --log_dir game_logs -R -S -I -O -E  --turns 50 --map_file maps/maze/maze_02p_02.map 'perl ../../MyBot.pl temp/game-out.txt' "python dist/sample_bots/python/GreedyBot.py" \
- && cat game_logs/0.bot0.error && cat ../../temp/game-out.txt
+
+ ./utils/run-local.sh
 
 =cut
 
