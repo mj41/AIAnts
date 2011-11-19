@@ -20,7 +20,9 @@ cd aichallenge/ants || exit
 
 echo > ../../temp/game-out.txt
 
-./playgame.py --player_seed 42 --end_wait=0.25 --verbose --log_dir game_logs -R -S -I -O -E  --turns $TURNS \
+./playgame.py --turns $TURNS --player_seed 42 \
+  --turntime=100 --loadtime=1000 --end_wait=0.25 \
+  --verbose --log_dir game_logs -R -S -I -O -E \
   --map_file maps/maze/maze_02p_02.map \
   'perl ../../MyBot.pl temp/game-out.txt' \
   "python dist/sample_bots/python/GreedyBot.py"
