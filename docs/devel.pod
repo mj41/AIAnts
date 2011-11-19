@@ -19,7 +19,13 @@
 
 =head2 Run game locally
 
- ./utils/run-local.sh 50
+Run max 30 turns MyBot.pm vs. python/GreedyBot.py on maze_02p_02 map
+
+ ./utils/run-local.sh 30
+
+Run max 500 turns MyBot.pm vs. MyBot.pm
+
+ ./utils/run-local.sh 500 two
 
 =head2 Use example bot
 
