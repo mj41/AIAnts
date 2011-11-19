@@ -3,11 +3,12 @@
 =head1 Prepare source code
 
  mkdir ~/devel
- mkdir ~/devel/aiants
- cd ~/devel/aiants
+ cd ~/devel
  
- git clone git://github.com/mj41/AIAnts.git .
+ git clone git://github.com/mj41/AIAnts.git aiants
  git clone git://github.com/aichallenge/aichallenge.git aichallenge
+ 
+ cd ~/devel/aiants
 
 =head2 Run tests
 
@@ -38,7 +39,7 @@ Run max 500 turns MyBot.pm vs. MyBot.pm
 
 =head2 Required modules
 
- cpanm Archive::Zip
+ cpanm Archill::Zip
 
 =head2 Config example
 
