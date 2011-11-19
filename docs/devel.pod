@@ -1,32 +1,45 @@
 =head1 Info
 
+=head1 Prepare source code
+
+ mkdir ~/devel
+ mkdir ~/devel/aiants
+ cd ~/devel/aiants
+ 
+ git clone git://github.com/mj41/AIAnts.git .
+ git clone git://github.com/aichallenge/aichallenge.git aichallenge
+
 =head2 Run tests
 
  prove
  
-=head2 Run empty bot
+=head2 Run simple test
 
- mkdir temp
- cp bots/01-empty.pm MyBot.pm
-
- perl MyBot.pl temp/output-log.txt 10 t/data/game-web.txt
- less temp/output-log.txt
+ ./utils/run-test.sh
 
 =head2 Run game locally
 
- mkdir aichallenge
- git clone git://github.com/aichallenge/aichallenge.git aichallenge
+ ./utils/run-local.sh 50
 
- ./utils/run-local.sh
+=head2 Use example bot
 
-=cut
+ git status -- MyBot.pm
+ git diff MyBot.pm
+ rm MyBot.pm
+ ./utils/user-example-bot.sh bots/02-random.pm
 
 =head1 Upload
 
+=head2 Required modules
+
+ cpanm Archive::Zip
+
 =head2 Config example
 
- cat ~/.aibots.cred
+Create user account, verify account and save your credential to config file.
  
+ cat ~/.aibots.cred
+
  myLogin
  mySecretPasswd
 
@@ -35,13 +48,16 @@
  touch ~/.aibots.cookies
  chmod go-rwx ~/.aibots.cookies
  
-=head2 Required modules
-
- cpanm Archive::Zip
-
 =head2 Upload
 
  perl util/upload.pl
  perl util/upload.pl up
+
+=head1 Join us
+
+=head2 Commit bit
+
+Join us on irc://irc.freenode.net/perl-ai and ask for commit bit or write directly
+to aiants@mj41.cz . You are welcome.
 
 =cut

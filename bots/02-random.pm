@@ -4,6 +4,8 @@ use strict;
 use warnings;
 
 use base 'AIAnts::BotHash';
+use Data::Dumper;
+
 
 =head1 NAME
 
@@ -28,13 +30,13 @@ sub setup {
 
 =head2 turn_body
 
-Main part of turn processing. Should return hash ref with 
+Main part of turn processing. Should return hash ref with
 
  # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
 
-inside if ant moves or 
+inside if ant moves or
 
- # "$x,$y"   => [ $ant_num, $x, $y, $dir, undef, undef ] 
+ # "$x,$y"   => [ $ant_num, $x, $y ]
 
 if not.
 
@@ -45,6 +47,10 @@ sub turn_body {
 
     my $dirs = [ 'N', 'E', 'S', 'W' ];
 
+    $self->log( "turn $turn_num, time " . time() . "\n" ) if $self->{log};
+    $self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
+    $self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
+
     my $changes = {};
     my $map_obj = $self->{m};
     my $map = $map_obj->{m};
@@ -53,7 +59,7 @@ sub turn_body {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
-        my $ant_num = $self->get_ant_num( $x, $y );
+        my $ant_num = $self->{pos2ant_num}{"$x,$y"};
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
         my $dir_num = int rand 3;
@@ -88,6 +94,7 @@ sub turn_body {
         $changes->{"$x,$y"} = [ $ant_num, $x, $y, $dir, undef, undef ] if $dir_num == 4;
     }
 
+    $self->log( "\n" ) if $self->{log};
     return $changes;
 }
 
