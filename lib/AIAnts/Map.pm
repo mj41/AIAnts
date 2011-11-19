@@ -53,6 +53,9 @@ sub new {
     };
 
     $self->init_map();
+
+    $self->{max_dist_key} = $self->init_distance_caches( 5 );
+
     $self->init_radius_cache( 'vr', $args{viewradius2},   1 );
     $self->init_radius_cache( 'ar', $args{attackradius2}, 0 );
     $self->init_radius_cache( 'sr', $args{spawnradius2},  0 );
@@ -107,24 +110,28 @@ Init helper parameter for computation with radius.
 =cut
 
 sub get_radius_cache {
-    my ( $self, $radius2 ) = @_;
+    my ( $self, $radius2, $radius2_down ) = @_;
 
     my $vm_distance = int sqrt( $radius2 );
     my $r_map = [
         [0,0]
     ];
+    $r_map = [] if defined $radius2_down;
     return $r_map unless $vm_distance;
 
+    my $act_radius;
     foreach my $x ( 0..$vm_distance ) {
-        foreach my $y ( 0..$vm_distance ) {
-            next if $x == 0 && $y == 0;
+        INNER: foreach my $y ( 0..$vm_distance ) {
+            next INNER if $x == 0 && $y == 0;
             # <= is from game specification
-            if ( ($x*$x + $y*$y) <= $radius2 ) {
-                push @$r_map, [ +$x, +$y ];
-                push @$r_map, [ -$x, +$y ];
-                push @$r_map, [ +$x, -$y ];
-                push @$r_map, [ -$x, -$y ];
-            }
+            $act_radius = $x*$x + $y*$y;
+            next INNER if $act_radius > $radius2;
+            next INNER if $radius2_down && $act_radius <= $radius2_down;
+
+            push @$r_map, [ +$x, +$y ];
+            push @$r_map, [ -$x, +$y ];
+            push @$r_map, [ +$x, -$y ];
+            push @$r_map, [ -$x, -$y ];
         }
     }
     return $r_map;
@@ -207,6 +214,29 @@ sub init_radius_cache {
     }
 
     return 1;
+}
+
+=head2 init_distance_caches
+
+Initialize distance caches.
+
+=cut
+
+sub init_distance_caches {
+    my ( $self, $max_num ) = @_;
+
+    my @radiuses = ( 1, 2, 4, 5, 8, 9, 10, 13, 16, 17, 18, 20, 25, 26, 29 );
+
+    my $prev_rad = 0;
+    my $num = 1;
+    foreach my $rad ( @radiuses ) {
+        my $r_diff_cache = $self->get_radius_cache( $rad, $prev_rad );
+        $self->{dist_cch}{ $num } = $r_diff_cache;
+        $prev_rad = $rad;
+        last if $num >= $max_num;
+        $num++;
+    }
+    return $num;
 }
 
 =head2 vis_cache_on_map

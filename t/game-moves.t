@@ -248,7 +248,6 @@ is( $map_obj->dump_map( $m_cch, 'x' ), <<MAP_END, 'm_cch' );
 . . . . . . .
 MAP_END
 
-
 my $m_cch_move_a = $map_obj->vis_cache_on_map( $map_obj->{vr}{m_cch_move}{E}{a}, %vis_conf );
 is(  $map_obj->dump_map( $m_cch_move_a, 'a' ), <<MAP_END, 'm_cch_move-E-a' );
 . . . . . . .
@@ -268,6 +267,19 @@ is( $map_obj->dump_map( $m_cch_move_r, 'r' ), <<MAP_END, 'm_cch_move-E-r' );
 . r . . . . .
 . . r . . . .
 . . . r . . .
+. . . . . . .
+MAP_END
+
+
+
+my $dist_cch = $map_obj->vis_cache_on_map( $map_obj->{dist_cch}{4}, %vis_conf );
+is( $map_obj->dump_map( $dist_cch, 'x' ), <<MAP_END, 'dist_cch' );
+. . . . . . .
+. . x . x . .
+. x . . . x .
+. . . . . . .
+. x . . . x .
+. . x . x . .
 . . . . . . .
 MAP_END
 
