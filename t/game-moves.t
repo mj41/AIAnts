@@ -144,9 +144,9 @@ is_deeply(
     'otd food'
 );
 is_deeply(
-    $map_obj->{otd}{hive},
+    $map_obj->{otd}{hill},
     { '2,4' => [ 2, 4, 0 ] },
-    'otd hive'
+    'otd hill'
 );
 is_deeply(
     $map_obj->{otd}{ant},

@@ -81,15 +81,15 @@ sub my_ants {
     return values %{ $self->{my_ants} };
 }
 
-=head2 set_hive
+=head2 set_hill
 
-Called when 'hive' position parsed.
+Called when 'hill' position parsed.
 
 =cut
 
-sub set_hive {
+sub set_hill {
     my ( $self, $x, $y, $owner ) = @_;
-    return $self->{m}->set( 'hive', $x, $y, $owner );
+    return $self->{m}->set( 'hill', $x, $y, $owner );
     return 1;
 }
 

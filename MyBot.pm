@@ -82,11 +82,11 @@ sub set_ant_goal {
 
     # go (explore)
     my $attemts = 100;
-    my ( $hive_x, $hive_y ) = @{ $self->{ant_num2hive_info}{$ant_num} };
+    my ( $hill_x, $hill_y ) = @{ $self->{ant_num2hill_info}{$ant_num} };
     while ( 1 ) {
         my ( $dx, $dir_x, $dy, $dir_y );
-        if ( rand(10) > 3 && ($hive_x != $ant_x || $hive_y != $ant_y) ) {
-            ( $dx, $dir_x, $dy, $dir_y ) = $map_obj->dist( $hive_x, $hive_y, $ant_x, $ant_y );
+        if ( rand(10) > 3 && ($hill_x != $ant_x || $hill_y != $ant_y) ) {
+            ( $dx, $dir_x, $dy, $dir_y ) = $map_obj->dist( $hill_x, $hill_y, $ant_x, $ant_y );
         } else {
             $dir_x = (rand 2) ? 1 : -1;
             $dir_y = (rand 2) ? 1 : -1;
@@ -178,8 +178,9 @@ sub turn_body {
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
     #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
+    # Processing 'foreach ant', so we need to track used locations.
     my $used = {
-        map { $_ => 1 } keys %{$self->{pos2hive}}
+        map { $_ => 1 } keys %{$self->{pos2hill}}
     };
     foreach my $data ( values %{$turn_data->{ant}} ) {
         my ( $x, $y, $owner ) = @$data;

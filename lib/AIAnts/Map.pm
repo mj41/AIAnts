@@ -36,7 +36,7 @@ sub new {
         explored => 2**0, #  1
         water    => 2**1, #  2
         food     => 2**2, #  4
-        hive     => 2**3, #  8
+        hill     => 2**3, #  8
         ant      => 2**4, # 16
         corpse   => 2**5, # 32
     };
@@ -48,7 +48,7 @@ sub new {
         explored => [ 'o', chr(0x2022)  ],
         water    => [ '%', chr(0x25A0)  ],
         food     => [ 'f', chr(0x2740)  ],
-        hive     => [ 'h', chr(0x27D0)  ],
+        hill     => [ 'h', chr(0x27D0)  ],
         ant      => [ 'a', chr(0x10312) ],
     };
 
@@ -97,7 +97,7 @@ sub init_map {
     $self->{otd} = {
         ant => {},
         corpse => {},
-        hive => {},
+        hill => {},
         food => {},
     };
     return 1;
@@ -355,8 +355,8 @@ sub dump_raw {
                 if ( $val & $o_bits->{ant} ) {
                     $out .= $o_chars->{ant}[$char_pos];
 
-                } elsif ( $val & $o_bits->{hive} ) {
-                    $out .= $o_chars->{hive}[$char_pos];
+                } elsif ( $val & $o_bits->{hill} ) {
+                    $out .= $o_chars->{hill}[$char_pos];
 
                 } elsif ( $val & $o_bits->{food} ) {
                     $out .= $o_chars->{food}[$char_pos];
@@ -399,7 +399,7 @@ sub set {
     my ( $self, $type, $x, $y, $owner ) = @_;
     $self->{m}[$x][$y] |= $self->{o_bits}{ $type };
 
-    # hive, ant, corpse
+    # hill, ant, corpse
     if ( defined $owner ) {
         $self->{otd}{$type}{"$x,$y"} = [ $x, $y, $owner+0 ];
 
@@ -490,9 +490,9 @@ sub update_new_after_turn {
         $self->set('food', $x, $y );
     }
 
-    foreach my $data ( values %{$turn_data->{hive}} ) {
+    foreach my $data ( values %{$turn_data->{hill}} ) {
         ( $x, $y, $owner ) = @$data;
-        $self->set('hive', $x, $y, $owner );
+        $self->set('hill', $x, $y, $owner );
     }
     return 1;
 }

@@ -224,7 +224,7 @@ sub parse_turn {
         ant => {},
         food => {},
         corpse => {},
-        hive => {},
+        hill => {},
     };
     LINE: while (1) {
         $line = $self->get_next_input_line();
@@ -252,7 +252,7 @@ sub parse_turn {
                 next LINE;
             }
             if ( $cmd eq 'h' ) {
-                $turn_data->{hive}{"$x,$y"} = [ $x, $y, $owner ];
+                $turn_data->{hill}{"$x,$y"} = [ $x, $y, $owner ];
                 next LINE;
             }
             next LINE;
@@ -276,9 +276,9 @@ sub parse_turn {
             next LINE;
         }
 
-        # hive (ant hill)
+        # hill (ant hill)
         if ( $cmd eq 'h' ) {
-            $self->{bot}->set_hive( $x, $y, $owner );
+            $self->{bot}->set_hill( $x, $y, $owner );
             next LINE;
         }
 
