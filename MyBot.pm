@@ -6,6 +6,7 @@ use warnings;
 use base 'AIAnts::BotHash';
 
 use Data::Dumper;
+use Time::HiRes qw/time sleep/;
 
 =head1 NAME
 
@@ -26,6 +27,8 @@ Setup.
 sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
+
+    $self->log( Dumper( {@_} ) ) if $self->{log};
 
     $self->{ant2role} = {};
     $self->{ant_goal} = {};
@@ -70,6 +73,7 @@ sub set_ant_goal {
             type => 'food',
             pos => [ $x, $y ],
             turns => 20,
+            visited => {},
         };
         $self->log("goal ant $ant_num new 'food' at $x,$y\n") if $self->{log};
         return 1;
@@ -77,19 +81,27 @@ sub set_ant_goal {
 
     # go (explore)
     my $map_obj = $self->{m};
+    my $attemts = 100;
     while ( 1 ) {
+
+        my ( $hive_x, $hive_y ) = @{ $self->{ant_num2hive_info}{$ant_num} };
+        my ( $dx, $dir_x, $dy, $dir_y ) = $map_obj->dist( $hive_x, $hive_y, $ant_x, $ant_y );
+
         ( $x, $y ) = $map_obj->pos_plus(
             $ant_x, $ant_y,
-            (int rand 31) - 15,
-            (int rand 31) - 15
+            $dir_x * ( int(rand 10)+1 ),
+            $dir_y * ( int(rand 10)+1 ),
         );
         last if $self->{m}->valid_not_used_pos( $x, $y, $used );
+        $attemts--;
+        return 1 if $attemts <= 0;
     }
 
+    my $max_turns = int(rand(350)**0.5) + 3;
     $self->{ant2goal}{$ant_num} = {
         type => 'go',
         pos => [ $x, $y ],
-        turns => 25,
+        turns => $max_turns,
         visited => {},
     };
     $self->log("goal ant $ant_num new 'go' at $x,$y\n") if $self->{log};
@@ -132,13 +144,15 @@ sub step_to_goal {
     my ( $self, $ant_num, $ant_x, $ant_y, $used, $turn_data ) = @_;
 
     my $goal = $self->{ant2goal}{$ant_num};
+    return () unless ref $goal;
+
     $goal->{turns}--;
     my ( $goal_x, $goal_y ) = @{ $goal->{pos} };
     my ( $dir, $Nx, $Ny ) = $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{visited} );
 
     return () unless defined $dir;
 
-    $self->{visited}{"$Nx,$Ny"} = 1;
+    $goal->{visited}{"$Nx,$Ny"} = 1;
     return ( $dir, $Nx, $Ny );
 }
 
@@ -160,11 +174,13 @@ if not.
 sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    $self->log( "turn $turn_num\n" ) if $self->{log};
+    $self->log( "turn $turn_num, time " . time() . "\n" ) if $self->{log};
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
     #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
-    my $used = {};
+    my $used = {
+        map { $_ => 1 } keys %{$self->{pos2hive}}
+    };
     foreach my $data ( values %{$turn_data->{ant}} ) {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
@@ -176,7 +192,7 @@ sub turn_body {
         my ( $x, $y, $owner ) = @$data;
         next unless $owner == 0;
 
-        my $ant_num = $self->get_ant_num( $x, $y );
+        my $ant_num = $self->{pos2ant_num}{"$x,$y"};
 
         if ( not exists $self->{ant2goal}{$ant_num} ) {
             $self->log("goal ant $ant_num setting the first goal\n") if $self->{log};

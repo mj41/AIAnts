@@ -40,8 +40,12 @@ sub setup {
     $self->{max_ant_num} = 0;
     $self->{pos2ant_num} = {};
     $self->{ant_num2prev_pos} = {};
+    $self->{ant_num2hive_info} = {};
 
-    $self->{m_initial_pos} = {};
+    $self->{max_hive_num} = 0;
+    $self->{pos2hive} = {};
+    $self->{hive2pos} = {};
+
     $self->{m_new} = [];
 }
 
@@ -73,15 +77,16 @@ sub turn {
 
         unless ( exists $self->{pos2ant_num}{"$x,$y"} ) {
             $self->init_new_ant( $x, $y );
-            unless ( exists $self->{m_initial_pos}{"$x,$y"} ) {
+            unless ( exists $self->{pos2hive}{"$x,$y"} ) {
                 $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
-                $self->{m_initial_pos}{"$x,$y"} = 1;
+                my $hive_num = ++$self->{max_hive_num};
+                $self->{pos2hive}{"$x,$y"} = $hive_num;
+                $self->{hive2pos}{$hive_num} = [ $x, $y ];
             }
         }
     }
     $self->set_area_diff( $turn_data );
     $self->update_on_turn_begin( $turn_data );
-
 
     my $changes = $self->turn_body( $turn_num, $turn_data );
 
@@ -114,9 +119,15 @@ Initialize new ant.
 
 sub init_new_ant {
     my ( $self, $x, $y ) = @_;
-    $self->{max_ant_num}++;
-    $self->{pos2ant_num}{"$x,$y"} = $self->{max_ant_num};
+
+    my $ant_num = ++$self->{max_ant_num};
+    $self->{pos2ant_num}{"$x,$y"} = $ant_num;
+
+    my $ant_hive_num = $self->{pos2hive}{"$x,$y"};
+    $self->{ant_num2hive_info}{$ant_num} = [ $x, $y, $ant_hive_num ];
+
     $self->new_ant_created( $self->{max_ant_num} );
+
     return $self->{max_ant_num};
 }
 
