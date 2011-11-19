@@ -614,6 +614,14 @@ sub valid_not_used_pos {
     return 1;
 }
 
+
+sub empty_path_temp {
+    my ( $sefl ) = @_;
+    return {
+        visited => {},
+    };
+}
+
 =head2 dir_from_to
 
 Get direction to get from position A to position B. Also return new position after move.
@@ -622,15 +630,12 @@ Skip positions in hash ref 'used' parameter.
 =cut
 
 sub dir_from_to {
-    my ( $self, $Ax, $Ay, $Bx, $By, $used, $visited ) = @_;
+    my ( $self, $Ax, $Ay, $Bx, $By, $used, $path_temp ) = @_;
 
     my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $Ax, $Ay, $Bx, $By );
     return () if $dx == 0 && $dy == 0;
 
-    my ( $dir, $Nx, $Ny );
-
     my @dirs;
-
     # longer
     if ( $dx >= $dy ) {
         if ( $dir_x == -1 ) {
@@ -664,10 +669,18 @@ sub dir_from_to {
         }
     }
 
+    my ( $dir, $Nx, $Ny, $Npos_str );
     foreach my $num (0..3) {
-        my $dir = $dirs[ $num ];
+        $dir = $dirs[ $num ];
         ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
-        return ( $dir, $Nx, $Ny ) if $self->valid_not_used_pos( $Nx, $Ny, $used, $visited );
+
+        $Npos_str = "$Nx,$Ny";
+
+        my $valid = $self->valid_not_used_pos( $Nx, $Ny, $used, $path_temp->{visited} );
+        if ( $valid ) {
+            $path_temp->{visited}{$Npos_str} = 1;
+            return ( $dir, $Nx, $Ny );
+        }
     }
 
     return ();
@@ -710,6 +723,7 @@ sub get_nearest_free_food {
     foreach my $food_pos ( values %$foods ) {
         my ( $food_x, $food_y ) = @$food_pos;
         next if exists $food2ant->{"$food_x,$food_y"};
+        next if abs( int($food_x/15)-int($ant_x/15) ) + abs( int($food_y/15)-int($ant_y/15) ) > 2;
 
         my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $ant_x, $ant_y, $food_x, $food_y );
         my $dist = $dx + $dy;

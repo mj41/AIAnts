@@ -63,6 +63,7 @@ sub set_ant_goal {
 
     my $ant_role = $self->{ant2role}{ $ant_num };
     my ( $x, $y );
+    my $map_obj = $self->{m};
 
     # food
     ( $x, $y ) = $self->{m}->get_nearest_free_food( $ant_x, $ant_y, $self->{food2ant} );
@@ -73,24 +74,28 @@ sub set_ant_goal {
             type => 'food',
             pos => [ $x, $y ],
             turns => 20,
-            visited => {},
+            path => $map_obj->empty_path_temp(),
         };
         $self->log("goal ant $ant_num new 'food' at $x,$y\n") if $self->{log};
         return 1;
     }
 
     # go (explore)
-    my $map_obj = $self->{m};
     my $attemts = 100;
+    my ( $hive_x, $hive_y ) = @{ $self->{ant_num2hive_info}{$ant_num} };
     while ( 1 ) {
-
-        my ( $hive_x, $hive_y ) = @{ $self->{ant_num2hive_info}{$ant_num} };
-        my ( $dx, $dir_x, $dy, $dir_y ) = $map_obj->dist( $hive_x, $hive_y, $ant_x, $ant_y );
+        my ( $dx, $dir_x, $dy, $dir_y );
+        if ( rand(10) > 3 && ($hive_x != $ant_x || $hive_y != $ant_y) ) {
+            ( $dx, $dir_x, $dy, $dir_y ) = $map_obj->dist( $hive_x, $hive_y, $ant_x, $ant_y );
+        } else {
+            $dir_x = (rand 2) ? 1 : -1;
+            $dir_y = (rand 2) ? 1 : -1;
+        }
 
         ( $x, $y ) = $map_obj->pos_plus(
             $ant_x, $ant_y,
-            $dir_x * ( int(rand 10)+1 ),
-            $dir_y * ( int(rand 10)+1 ),
+            $dir_x * ( int(rand 15)+1 ),
+            $dir_y * ( int(rand 15)+1 ),
         );
         last if $self->{m}->valid_not_used_pos( $x, $y, $used );
         $attemts--;
@@ -102,7 +107,7 @@ sub set_ant_goal {
         type => 'go',
         pos => [ $x, $y ],
         turns => $max_turns,
-        visited => {},
+        path => $map_obj->empty_path_temp(),
     };
     $self->log("goal ant $ant_num new 'go' at $x,$y\n") if $self->{log};
     return 1;
@@ -148,12 +153,7 @@ sub step_to_goal {
 
     $goal->{turns}--;
     my ( $goal_x, $goal_y ) = @{ $goal->{pos} };
-    my ( $dir, $Nx, $Ny ) = $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{visited} );
-
-    return () unless defined $dir;
-
-    $goal->{visited}{"$Nx,$Ny"} = 1;
-    return ( $dir, $Nx, $Ny );
+    return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
 }
 
 
