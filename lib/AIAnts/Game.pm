@@ -196,11 +196,11 @@ sub do_turn {
     my $self = shift;
 
     $self->{turn_num}++;
-    my $turn_start_time = Time::HiRes::time();
     $self->init_turn( $self->{turn_num} );
     my ( $last_cmd, $turn_data ) = $self->parse_turn();
     return 0 if $last_cmd eq 'end';
 
+    my $turn_start_time = Time::HiRes::time();
     if ( $self->{control_turntime} ) {
         $self->turn( $self->{turn_num}, $turn_data, $turn_start_time );
     } else {
@@ -338,11 +338,11 @@ This method is called each turn to generate orders.
 sub turn {
     my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
 
-    my $remaining_turn_time_us = int(
-        $self->{config}{turntime}                        # allowed turn time in ms
-        - (Time::HiRes::time() - $turn_start_time)*1000  # minus time already elapsed in ms
-        - 1                                              # minus 2 ms to process alarm sub
-    )*1000;
+    my $remaining_turn_time_us = (
+        $self->{config}{turntime}                             # allowed turn time in ms
+        - int((Time::HiRes::time() - $turn_start_time)*1000)  # minus time already elapsed in ms
+        - 0.1                                                 # minus 0.1 miliseconds to process alarm sub
+    ) * 1000;                                                 # form miliseconds to microseconds
 
     eval {
         local $SIG{ALRM} = sub {
