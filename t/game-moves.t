@@ -37,13 +37,14 @@ is( $game->bot->map->dump(1), <<MAP_END, 'setup' );
 MAP_END
 
 
-# prepare turn 1 game output and bot orders
+# Prepare turn 1 game output and bot orders.
 $game->set_input(q(
     a 1 2 0
-    w 1 1
+    h 1 2 0
     w 7 2
-    h 1 4 1
+    h 1 4 2
     f 2 2
+    w 1 1
 ));
 $bot->set_next_changes({
     # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
@@ -57,7 +58,7 @@ $game->do_turn;
 # Check bot and map state after turn 1 - new ant on position 1,2
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
-o % a o h . . . . .
+o % a o 2 . . . . .
 . o f o . . . . . .
 . . o . . . . . . .
 . . . . . . . . . .
@@ -72,20 +73,26 @@ MAP_END
 
 =pod
 
-Map
+Part of map in turn 1:
+. o o o . .
+o % a o 2 .
+. o f o . .
+. . o . . .
+
+New map in turn 2 (food changes)
 
 . o f o . .
-o % o o f .
-o o a f h .
-. o o o . .
+o % 0 o 2 .
+o o a f o .
+. o o b . .
 . . % . . .
 
 Part of map ants see
 
 . . f . . .
-. % o o . .
-o o a f h .
-. o o o . .
+. % 0 o . .
+o o a f o .
+. o o b . .
 . . % . . .
 
 =cut
@@ -93,9 +100,10 @@ o o a f h .
 # So game should send (in clock order)
 $game->set_input(q(
     a 2 2 0
+    h 1 2 0
     f 0 2
     f 2 3
-    h 2 4 0
+    a 3 3 1
     w 4 2
     w 1 1
 ));
@@ -124,9 +132,9 @@ MAP_END
 
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o f o . . . . . .
-o % o o o . . . . .
-o o a f h . . . . .
-. o o o . . . . . .
+o % 0 o o . . . . .
+o o a f o . . . . .
+. o o b . . . . . .
 . . % . . . . . . .
 . . . . . . . . . .
 . . . . . . . . . .
@@ -144,14 +152,24 @@ is_deeply(
     'otd food'
 );
 is_deeply(
-    $map_obj->{otd}{hill},
-    { '2,4' => [ 2, 4, 0 ] },
-    'otd hill'
+    $map_obj->{otd}{m_hill},
+    { '1,2' => [ 1, 2 ] },
+    'otd m_hill'
 );
 is_deeply(
-    $map_obj->{otd}{ant},
-    { '2,2' => [ 2, 2, 0 ] },
-    'otd ant'
+    $map_obj->{otd}{e_hill},
+    {},
+    'otd e_hill'
+);
+is_deeply(
+    $map_obj->{otd}{m_ant},
+    { '2,2' => [ 2, 2 ] },
+    'otd m_ant'
+);
+is_deeply(
+    $map_obj->{otd}{e_ant},
+    { '3,3' => [ 3, 3, 1 ] },
+    'otd e_ant'
 );
 
 
@@ -216,15 +234,15 @@ $bot->set_next_changes({
 $game->do_turn;
 
 is_deeply(
-    $map_obj->{otd}{ant},
-    { '2,1' => [ 2, 1, 0 ], '2,4' => [ 2, 4, 0 ] },
+    $map_obj->{otd}{m_ant},
+    { '2,1' => [ 2, 1 ], '2,4' => [ 2, 4 ] },
     'turn 3 - otd ant'
 );
 
 is( $game->bot->map->dump(1), <<MAP_END, 'turn 3' );
 . f o o o . . . . .
 o % o o f o . . . .
-f a o o a o f . . h
+f a o o a o f . . 1
 o o o o o o . . . .
 . % % . % . . . . .
 . . . . . . . . . .

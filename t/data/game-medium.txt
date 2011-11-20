@@ -1,23 +1,28 @@
 turn 0
 loadtime 3000
 turntime 1000
-rows 3
-cols 4
+rows 4
+cols 5
 turns 1000
 viewradius2 2
 attackradius2 1
 spawnradius2 1
-player_seed 31
+player_seed 42
 ready
 
 turn 1
-h 1 1 0
 a 1 1 0
+h 1 1 0
 w 0 1
-w 0 2
 a 1 2 1
-h 2 2 2
+a 2 2 2
 f 2 1
+w 0 0
+a 3 3 0
+h 3 3 0
+h 2 3 2
+w 0 4
+a 2 2 2
 go
 
 end

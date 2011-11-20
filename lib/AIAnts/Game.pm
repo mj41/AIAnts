@@ -221,10 +221,12 @@ sub parse_turn {
     my $line;
     my $turn_data = {
         water => {},
-        ant => {},
+        m_ant => {},
+        e_ant => {},
         food => {},
         corpse => {},
-        hill => {},
+        m_hill => {},
+        e_hill => {},
     };
     LINE: while (1) {
         $line = $self->get_next_input_line();
@@ -240,7 +242,11 @@ sub parse_turn {
                 next LINE;
             }
             if ( $cmd eq 'a' ) {
-                $turn_data->{ant}{"$x,$y"} = [ $x, $y, $owner ];
+                if ( $owner == 0 ) {
+                    $turn_data->{m_ant}{"$x,$y"} = [ $x, $y ];
+                } else {
+                    $turn_data->{e_ant}{"$x,$y"} = [ $x, $y, $owner ];
+                }
                 next LINE;
             }
             if ( $cmd eq 'f' ) {
@@ -252,7 +258,11 @@ sub parse_turn {
                 next LINE;
             }
             if ( $cmd eq 'h' ) {
-                $turn_data->{hill}{"$x,$y"} = [ $x, $y, $owner ];
+                if ( $owner == 0 ) {
+                    $turn_data->{m_hill}{"$x,$y"} = [ $x, $y ];
+                } else {
+                    $turn_data->{e_hill}{"$x,$y"} = [ $x, $y, $owner ];
+                }
                 next LINE;
             }
             next LINE;

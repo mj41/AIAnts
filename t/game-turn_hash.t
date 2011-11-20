@@ -11,16 +11,19 @@ use AIAnts::TestGame;
 my $bot = AIAnts::TestBotHash->new();
 my $game = new AIAnts::TestGame(
     bot => $bot,
-    in_fpath => 't/data/game-small.txt',
+    in_fpath => 't/data/game-medium.txt',
 );
 $game->run;
 
 my $dp = $game->bot->map->dump(1,1);
+
+
 is(
     $dp,
-      ". % % .   00 02 02 00\n"
-    . ". a a .   00 17 16 00\n"
-    . ". f . .   00 04 00 00\n",
+      "% % o o %     3   3   1   1   3\n"
+    . "o a b . .     1  41  65   0   0\n"
+    . "o f c 2 o     1   5  65  17   1\n"
+    . ". . o a o     0   0   1  41   1\n",
     'map dump'
 );
 

@@ -22,9 +22,9 @@ is( $game_config{cols}, 4, 'config cols' );
 my $dp = $game->bot->map->dump(1,0);
 is(
     $dp,
-      ". % % .\n"
-    . ". a a .\n"
-    . ". f . .\n",
+      "o % % .\n"
+    . "o a b .\n"
+    . "o f 2 .\n",
     'map dump'
 );
 

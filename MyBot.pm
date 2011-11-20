@@ -182,16 +182,14 @@ sub turn_body {
     my $used = {
         map { $_ => 1 } keys %{$self->{pos2hill}}
     };
-    foreach my $data ( values %{$turn_data->{ant}} ) {
-        my ( $x, $y, $owner ) = @$data;
-        next unless $owner == 0;
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
+        my ( $x, $y ) = @$data;
         $used->{"$x,$y"} = 1;
     }
 
     my $changes = {};
-    foreach my $data ( values %{$turn_data->{ant}} ) {
-        my ( $x, $y, $owner ) = @$data;
-        next unless $owner == 0;
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
+        my ( $x, $y ) = @$data;
 
         my $ant_num = $self->{pos2ant_num}{"$x,$y"};
 

@@ -32,13 +32,15 @@ sub new {
     bless $self, $class;
 
     $self->{o_bits} = {
-        unknown  => 0,    #  0
-        explored => 2**0, #  1
-        water    => 2**1, #  2
-        food     => 2**2, #  4
-        hill     => 2**3, #  8
-        ant      => 2**4, # 16
-        corpse   => 2**5, # 32
+        unknown  => 0,    #   0
+        explored => 2**0, #   1
+        water    => 2**1, #   2
+        food     => 2**2, #   4
+        m_hill   => 2**3, #   8
+        e_hill   => 2**4, #  16
+        m_ant    => 2**5, #  32
+        e_ant    => 2**6, #  64
+        corpse   => 2**7, # 128
     };
 
     $self->{o_utf8} = $args{o_utf8} // 0;
@@ -48,8 +50,10 @@ sub new {
         explored => [ 'o', chr(0x2022)  ],
         water    => [ '%', chr(0x25A0)  ],
         food     => [ 'f', chr(0x2740)  ],
-        hill     => [ 'h', chr(0x27D0)  ],
-        ant      => [ 'a', chr(0x10312) ],
+        m_hill   => [ '0', '0' ],
+        e_hill   => [ '1', '1' ],
+        m_ant    => [ 'a', 'a' ],
+        e_ant    => [ 'b', 'b' ],
     };
 
     $self->init_map();
@@ -95,10 +99,11 @@ sub init_map {
 
     # one turn data
     $self->{otd} = {
-        ant => {},
-        corpse => {},
-        hill => {},
         food => {},
+        m_ant => {},
+        m_hill => {},
+        e_ant => {},
+        e_hill => {},
     };
     return 1;
 }
@@ -336,7 +341,7 @@ sub dump_raw {
     my $o_bits = $self->{o_bits};
     my $o_chars = $self->{o_chars};
     my $out = '';
-    my ( $x, $y );
+    my ( $x, $y, $owner );
     foreach $x ( 0..$mx ) {
         $out .= $line_prefix;
         if ( $normal ) {
@@ -352,11 +357,19 @@ sub dump_raw {
                 my $val = $map->[$x][$y];
 
                 $out .= ' ' if $y;
-                if ( $val & $o_bits->{ant} ) {
-                    $out .= $o_chars->{ant}[$char_pos];
+                if ( $val & $o_bits->{m_ant} ) {
+                    $out .= $o_chars->{m_ant}[$char_pos];
 
-                } elsif ( $val & $o_bits->{hill} ) {
-                    $out .= $o_chars->{hill}[$char_pos];
+                } elsif ( $val & $o_bits->{e_ant} ) {
+                    $owner = $self->{otd}{e_ant}{"$x,$y"}[2];
+                    $out .= chr( ord($o_chars->{e_ant}[$char_pos]) + $owner - 1 );
+
+                } elsif ( $val & $o_bits->{m_hill} ) {
+                    $out .= $o_chars->{m_hill}[$char_pos];
+
+                } elsif ( $val & $o_bits->{e_hill} ) {
+                    $owner = $self->{otd}{e_hill}{"$x,$y"}[2];
+                    $out .= chr( ord($o_chars->{e_hill}[$char_pos]) + $owner - 1 );
 
                 } elsif ( $val & $o_bits->{food} ) {
                     $out .= $o_chars->{food}[$char_pos];
@@ -378,7 +391,7 @@ sub dump_raw {
             foreach $y ( 0..$my ) {
                 my $val = $map->[$x][$y];
                 $out .= ' ' if $y;
-                $out .= sprintf( "%02d", $map->[$x][$y] );
+                $out .= sprintf( "%3d", $map->[$x][$y] );
             }
         }
 
@@ -391,7 +404,7 @@ sub dump_raw {
 
 Set position on map to concrete type.
 
- $map->set( 'food', 1, 2 ); # food on [1,2]
+ $map->set( 'e_ant', 2, 3, 1 ); # enemy 1 ant on [2,3]
 
 =cut
 
@@ -480,9 +493,13 @@ sub update_new_after_turn {
 
     # set new otd
     my ( $x, $y, $owner );
-    foreach my $data ( values %{$turn_data->{ant}} ) {
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
         ( $x, $y, $owner ) = @$data;
-        $self->set('ant', $x, $y, $owner );
+        $self->set('m_ant', $x, $y, $owner );
+    }
+    foreach my $data ( values %{$turn_data->{e_ant}} ) {
+        ( $x, $y, $owner ) = @$data;
+        $self->set('e_ant', $x, $y, $owner );
     }
 
     foreach my $data ( values %{$turn_data->{food}} ) {
@@ -490,9 +507,13 @@ sub update_new_after_turn {
         $self->set('food', $x, $y );
     }
 
-    foreach my $data ( values %{$turn_data->{hill}} ) {
+    foreach my $data ( values %{$turn_data->{m_hill}} ) {
         ( $x, $y, $owner ) = @$data;
-        $self->set('hill', $x, $y, $owner );
+        $self->set('m_hill', $x, $y, $owner );
+    }
+    foreach my $data ( values %{$turn_data->{e_hill}} ) {
+        ( $x, $y, $owner ) = @$data;
+        $self->set('e_hill', $x, $y, $owner );
     }
     return 1;
 }

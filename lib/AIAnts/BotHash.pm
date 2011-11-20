@@ -71,18 +71,18 @@ Return array of array refs with commands (ants movements).
 sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
-    foreach my $data ( values %{$turn_data->{ant}} ) {
-        my ( $x, $y, $owner ) = @$data;
-        next unless $owner == 0;
+    # Init my new hills.
+    foreach my $data ( values %{$turn_data->{m_hill}} ) {
+        my ( $x, $y ) = @$data;
+        next if exists $self->{pos2hill}{"$x,$y"};
+        $self->init_new_hill( $x, $y );
+    }
 
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
+        my ( $x, $y ) = @$data;
         unless ( exists $self->{pos2ant_num}{"$x,$y"} ) {
+            $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
             $self->init_new_ant( $x, $y );
-            unless ( exists $self->{pos2hill}{"$x,$y"} ) {
-                $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
-                my $hill_num = ++$self->{max_hill_num};
-                $self->{pos2hill}{"$x,$y"} = $hill_num;
-                $self->{hill2pos}{$hill_num} = [ $x, $y ];
-            }
         }
     }
     $self->set_area_diff( $turn_data );
@@ -109,6 +109,20 @@ sub turn {
         push @orders, [ $x, $y, $dir ];
     }
     return @orders;
+}
+
+=head2 init_new_hill
+
+Initialize new hill.
+
+=cut
+
+sub init_new_hill {
+    my ( $self, $x, $y ) = @_;
+    my $hill_num = ++$self->{max_hill_num};
+    $self->{pos2hill}{"$x,$y"} = $hill_num;
+    $self->{hill2pos}{$hill_num} = [ $x, $y ];
+    return 1;
 }
 
 =head2 init_new_ant
@@ -175,10 +189,8 @@ sub set_area_diff {
     my $diff_a = [];
     my ( $Nx, $Ny );
     my $processed = {};
-    foreach my $data ( values %{$turn_data->{ant}} ) {
-        my ( $x, $y, $owner ) = @$data;
-        next unless $owner == 0;
-
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
+        my ( $x, $y ) = @$data;
         my $ant_num = $self->{pos2ant_num}{"$x,$y"};
         next unless exists $self->{ant_num2prev_pos}{ $ant_num };
 

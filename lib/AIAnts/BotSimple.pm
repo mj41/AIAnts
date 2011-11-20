@@ -58,7 +58,8 @@ sub set_ant {
 
     my $pos_str = "$x,$y";
 
-    $self->{m}->set( 'ant', $x, $y, $owner );
+    $self->{m}->set( 'm_ant', $x, $y ) if $owner == 0;
+    $self->{m}->set( 'e_ant', $x, $y, $owner );
 
     if ( $owner eq '0' ) {
         return if exists $self->{my_ants}{$pos_str};
@@ -89,7 +90,8 @@ Called when 'hill' position parsed.
 
 sub set_hill {
     my ( $self, $x, $y, $owner ) = @_;
-    return $self->{m}->set( 'hill', $x, $y, $owner );
+    return $self->{m}->set( 'm_hill', $x, $y ) if $owner == 0;
+    return $self->{m}->set( 'e_hill', $x, $y, $owner );
     return 1;
 }
 
