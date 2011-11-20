@@ -34,6 +34,7 @@ sub new {
     $self->{log_fpath} = $args{log_fpath} // 0;
     $self->{log} = $self->{log_fpath} ? 1 : 0;
     $self->{map_args} = $args{map} // {};
+    $self->{orders} = [];
 
     bless $self, $class;
 }
@@ -77,13 +78,16 @@ Called before new turn params are parser and set_* methods called.
 
 sub init_turn {
     my ( $self, $turn_num ) = @_;
+    $self->{turn_num} = $turn_num;
+    $self->{orders} = [];
+    return 1;
 }
 
 =head2 turn
 
-Return array of array refs with commands (ants movements).
-
- return ( [ 1, 1, 'E' ], [ 1, 2, 'S' ] ); # move ant [1,1] east (y++) and ant [1,2] south (x++)
+Main part of bot brain/algorithm. Should add values (array ref) to 'orders' attribute
+(array of array refs). Game will call 'get_orders_fast' method to get 'orders'
+attribute value. See L<get_orders_fast> documentation.
 
 =cut
 
@@ -91,7 +95,36 @@ sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
     croak 'Method turn not implemented in ' . __PACKAGE__;
-    return ();
+    return 1;
+}
+
+=head2 add_order
+
+Add order to 'orders' attribute.
+
+=cut
+
+sub add_order {
+    my ( $self, $x, $y, $dir ) = @_;
+    push @{$self->{orders}}, [ $x, $y, $dir ];
+    return 1;
+}
+
+=head2 get_orders_fast
+
+Called if turn time almost reached or on after normal turn end.
+
+Return array ref of array refs with commands (ants movements).
+
+ return [
+    [ 1, 1, 'E' ], # move ant on postion [1,1] east (y++)
+    [ 1, 2, 'S' ], # and ant on position [1,2] south (x++)
+ ];
+
+=cut
+
+sub get_orders_fast {
+    return $_[0]->{orders};
 }
 
 =head2 game_over

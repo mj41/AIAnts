@@ -108,15 +108,13 @@ sub set_corpse {
 
 =head2 turn
 
-Return array of array refs with commands (ants movements).
-
- return ( [ 1, 1, 'E' ], [ 1, 2, 'S' ] ); # move ant [1,1] east (y++) and ant [1,2] south (x++)
+See L<AIANts::BotBase::turn> method documentation.
 
 =cut
 
 sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
-    return ();
+    return 1;
 }
 
 =head1 AUTHOR

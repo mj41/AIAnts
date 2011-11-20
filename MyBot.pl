@@ -43,6 +43,7 @@ my %game_conf = (
     bot => $bot,
     ver => $ver,
     in_fpath => $in_fpath,
+    control_turntime => 1,
 );
 
 my $game = new AIAnts::Game( %game_conf );

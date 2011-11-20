@@ -213,7 +213,6 @@ sub turn_body {
         $used->{"$x,$y"} = 1;
     }
 
-    my $changes = {};
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
 
@@ -231,12 +230,11 @@ sub turn_body {
 
         if ( (not defined $dir) || ($Nx == $x && $Ny == $y) ) {
             $self->log("move ant $ant_num stay on $x,$y\n") if $self->{log};
-            $changes->{"$x,$y"} = [ $ant_num, $x, $y ];
             $used->{"$x,$y"} = 2;
 
         } else {
             $self->log("move ant $ant_num to $Nx,$Ny\n") if $self->{log};
-            $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];
+            $self->add_order( $ant_num, $x, $y, $dir, $Nx, $Ny );
             delete $used->{"$x,$y"};
             $used->{"$Nx,$Ny"} = 2;
         }
@@ -244,7 +242,7 @@ sub turn_body {
 
     $self->log( "\n" ) if $self->{log};
     #use Data::Dumper; $self->log( Dumper( $self->{ant2goal} ) ); die if $turn_num > 3;
-    return $changes;
+    return 1;
 }
 
 

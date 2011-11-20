@@ -3,6 +3,7 @@ package AIAnts::Game;
 use strict;
 use warnings;
 use Carp qw(croak);
+use Time::HiRes ();
 
 =head1 NAME
 
@@ -46,6 +47,9 @@ Set initialized file handle for input reading.
 
 sub set_input_fh {
     my ( $self, %args ) = @_;
+
+    # Use SIG{ALRM} to control/check maximum bot turntime.
+    $self->{control_turntime} = $args{control_turntime} // 1;
 
     if ( defined $args{fh} ) {
         $self->{in_source} = 'fh';
@@ -104,6 +108,7 @@ sub run {
     my $self = shift;
 
     $self->do_setup();
+
     while (1) {
         last unless $self->do_turn();
     }
@@ -191,10 +196,17 @@ sub do_turn {
     my $self = shift;
 
     $self->{turn_num}++;
+    my $turn_start_time = Time::HiRes::time();
     $self->init_turn( $self->{turn_num} );
     my ( $last_cmd, $turn_data ) = $self->parse_turn();
     return 0 if $last_cmd eq 'end';
-    $self->turn( $self->{turn_num}, $turn_data );
+
+    if ( $self->{control_turntime} ) {
+        $self->turn( $self->{turn_num}, $turn_data, $turn_start_time );
+    } else {
+        $self->turn_simple( $self->{turn_num}, $turn_data, $turn_start_time );
+    }
+
     return 1;
 }
 
@@ -302,33 +314,81 @@ sub parse_turn {
     return ( $line, $turn_data );
 }
 
+
+=head2 turn_simple
+
+Simple implementation of turn_method.
+
+=cut
+
+sub turn_simple {
+    my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
+
+    $self->{bot}->turn( $turn_num, $turn_data, $turn_start_time );
+    $self->issue_bot_orders();
+    return 1;
+}
+
 =head2 turn
 
-This method is called each turn to generate orders. Call orders method on bot object.
+This method is called each turn to generate orders.
 
 =cut
 
 sub turn {
-    my ( $self, $turn_num, $turn_data ) = @_;
-    my ( @orders ) = $self->{bot}->turn( $turn_num, $turn_data );
-    foreach my $order ( @orders ) {
-        $self->issue_order( @$order );
+    my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
+
+    my $remaining_turn_time_us = int(
+        $self->{config}{turntime}                        # allowed turn time in ms
+        - (Time::HiRes::time() - $turn_start_time)*1000  # minus time already elapsed in ms
+        - 1                                              # minus 2 ms to process alarm sub
+    )*1000;
+
+    eval {
+        local $SIG{ALRM} = sub {
+            $self->turn_alarm_raised();
+            die "turntime reached";
+        };
+        Time::HiRes::ualarm( $remaining_turn_time_us );
+        $self->{bot}->turn( $turn_num, $turn_data, $turn_start_time );
+        Time::HiRes::ualarm(0);
+    };
+    if ( $@ ) {
+        my $err = $@;
+        die $err if $err !~ /turntime reached/;
+    } else {
+        $self->issue_bot_orders();
     }
-    $self->my_say('go');
     return 1;
 }
 
-=head2 issue_order
+=head2 turn_alarm_raised
 
-Method to issue an order to the server.
+This method is called each turn if time almost exceed allowed turn_time.
 
 =cut
 
-sub issue_order {
-    my ( $self, $x, $y, $direction ) = @_;
-    $self->my_say(
-        sprintf( 'o %d %d %s', $x, $y, $direction )
-    );
+sub turn_alarm_raised {
+    $_[0]->issue_bot_orders();
+}
+
+=head2 issue_bot_orders
+
+Method to issue an orders to the server prepared in bot object.
+
+=cut
+
+sub issue_bot_orders {
+    my ( $self ) = @_;
+
+    my $orders = $self->{bot}->get_orders_fast();
+    foreach my $one_order ( @$orders ) {
+        my ( $x, $y, $direction ) = @$one_order;
+        $self->my_say(
+            sprintf( 'o %d %d %s', $x, $y, $direction )
+        );
+    }
+    $_[0]->my_say('go');
 }
 
 =head2 my_say

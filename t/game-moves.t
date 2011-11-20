@@ -9,7 +9,10 @@ use AIAnts::TestBotHash;
 use AIAnts::TestGame;
 
 my $bot = AIAnts::TestBotHash->new();
-my $game = new AIAnts::TestGame( bot => $bot );
+my $game = new AIAnts::TestGame(
+    bot => $bot,
+    control_turntime => 1,
+);
 
 $game->set_input(q(
     turn 0
@@ -25,7 +28,7 @@ $game->set_input(q(
     ready
 ));
 $game->do_setup;
-is( $game->bot->map->dump(1), <<MAP_END, 'setup' );
+is( $bot->map->dump(1), <<MAP_END, 'setup' );
 . . . . . . . . . .
 . . . . . . . . . .
 . . . . . . . . . .
@@ -46,17 +49,16 @@ $game->set_input(q(
     f 2 2
     w 1 1
 ));
-$bot->set_next_changes({
-    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
-    '3,2'     => [        1,  1,  2,  'S',   2,   2 ]
-});
+#                              $x, $y, $dir, $Nx, $Ny
+$bot->test_prepare_test_order(  1,  2,  'S',   2,   2 );
 
 # Do turn 1. Bot is going to process prepared data (receive input and send 'changes').
 # Ant is on position 1,2 and will prepare move 'S' to 2,2.
 $game->do_turn;
 
+
 # Check bot and map state after turn 1 - new ant on position 1,2
-is( $game->bot->map->dump(1), <<MAP_END, 'turn 1' );
+is( $bot->map->dump(1), <<MAP_END, 'turn 1' );
 . o o o . . . . . .
 o % a o 2 . . . . .
 . o f o . . . . . .
@@ -107,18 +109,16 @@ $game->set_input(q(
     w 4 2
     w 1 1
 ));
-$bot->set_next_changes({
-    # $Nx,$Ny => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
-    '2,1'     => [        1,  2,  2,  'W',   2,   1 ]
-});
+#                              $x, $y, $dir, $Nx, $Ny
+$bot->test_prepare_test_order(  2,  2,  'W',   2,   1 );
 
 # Do turn 2. We moved on 2,2 and next stop is 1,2.
 $game->do_turn;
 
-my $map_obj = $game->bot->map;
+my $map_obj = $bot->map;
 
 # Checks after turn 2 - ant on position 2,2.
-my $m_new = $map_obj->vis_cache_on_map( $game->bot->{m_new}, padding=>1 );
+my $m_new = $map_obj->vis_cache_on_map( $bot->{m_new}, padding=>1 );
 is( $map_obj->dump_map( $m_new, 'x' ), <<MAP_END, 'm_new' );
 . . . . . . .
 . . . . . . .
@@ -130,7 +130,7 @@ x . . . x . .
 MAP_END
 
 
-is( $game->bot->map->dump(1), <<MAP_END, 'turn 2' );
+is( $bot->map->dump(1), <<MAP_END, 'turn 2' );
 . o f o . . . . . .
 o % 0 o o . . . . .
 o o a f o . . . . .
@@ -224,12 +224,10 @@ $game->set_input(q(
     f 2 6
     w 4 4
 ));
-$bot->set_next_changes({
-    # $x,$y   => [ $ant_num, $x, $y ]
-    '2,1'     => [        1,  2,  1 ],
-    '2,4'     => [        2,  2,  4 ],
-});
-
+# Do not move.
+#                              $x, $y
+$bot->test_prepare_test_order( 2,  1 );
+$bot->test_prepare_test_order( 2,  4 );
 # Do turn 3. We moved on 2,1 and set we will stay there.
 $game->do_turn;
 
@@ -239,7 +237,7 @@ is_deeply(
     'turn 3 - otd ant'
 );
 
-is( $game->bot->map->dump(1), <<MAP_END, 'turn 3' );
+is( $bot->map->dump(1), <<MAP_END, 'turn 3' );
 . f o o o . . . . .
 o % o o f o . . . .
 f a o o a o f . . 1
@@ -254,7 +252,7 @@ MAP_END
 # Test bot->map internals.
 
 my %vis_conf = ( negative=>1, padding=>1 );
-my $m_cch = $map_obj->vis_cache_on_map( $game->bot->map->{vr}{m_cch}, %vis_conf );
+my $m_cch = $map_obj->vis_cache_on_map( $bot->map->{vr}{m_cch}, %vis_conf );
 $vis_conf{size} = $#$m_cch;
 is( $map_obj->dump_map( $m_cch, 'x' ), <<MAP_END, 'm_cch' );
 . . . . . . .

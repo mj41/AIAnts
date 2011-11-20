@@ -49,27 +49,14 @@ sub setup {
     $self->{m_new} = [];
 }
 
-=head2 init_turn
-
-Call init_turn on your bot.
-
-=cut
-
-sub init_turn {
-    my ( $self, $turn_num ) = @_;
-    $self->{turn_num} = $turn_num;
-}
-
 =head2 turn
 
-Return array of array refs with commands (ants movements).
-
- return ( [ 1, 1, 'E' ], [ 1, 2, 'S' ] ); # move ant [1,1] east (y++) and ant [1,2] south (x++)
+See L<AIANts::BotBase::turn> method documentation.
 
 =cut
 
 sub turn {
-    my ( $self, $turn_num, $turn_data ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
 
     # Init my new hills.
     foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
@@ -81,9 +68,8 @@ sub turn {
     # Remove my ants (ants died).
     foreach my $pos_str ( keys %{$self->{pos2ant_num}} ) {
         next if exists $turn_data->{m_ant}{$pos_str};
-
-        my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
-        my $ant_num = @{ $self->{pos2ant_num}{$pos_str} };
+        my $ant_num = $self->{pos2ant_num}{$pos_str};
+        my ( $x, $y ) = split ',', $pos_str;
         $self->process_turn_ant_died( $ant_num, $x, $y );
     }
 
@@ -101,27 +87,35 @@ sub turn {
     # Update map.
     $self->update_on_turn_begin( $turn_data );
 
-    my $changes = $self->turn_body( $turn_num, $turn_data );
-
-    $self->{pos2ant_num} = {};
+    # pos2ant_num is updated in 'add_order' method.
     $self->{ant_num2prev_pos} = {};
+    $self->turn_body( $turn_num, $turn_data );
 
-    my @orders = ();
-    foreach my $change_data ( values %$changes ) {
-        my ( $ant_num, $x, $y, $dir, $Nx, $Ny ) = @$change_data;
+    return 1;
+}
 
-        # no move
-        unless ( defined $Nx ) {
-            $self->{pos2ant_num}->{"$x,$y"} = $ant_num;
-            next;
-        }
+=head2 add_order
 
-        # move
-        $self->{pos2ant_num}{"$Nx,$Ny"} = $ant_num;
-        $self->{ant_num2prev_pos}{$ant_num} = [ $x, $y, $dir ];
-        push @orders, [ $x, $y, $dir ];
-    }
-    return @orders;
+Add order to 'orders' attribute and update attributes related to ant position change.
+
+=cut
+
+sub add_order {
+    my ( $self, $ant_num, $x, $y, $dir, $Nx, $Ny ) = @_;
+
+    # not move
+    return 1 unless defined $Nx;
+    return 1 if ($x == $Nx) && ($y == $Ny);
+
+    # move
+
+    # Delete old and set new ant_num pos.
+    delete $self->{pos2ant_num}{"$x,$y"};
+    $self->{pos2ant_num}{"$Nx,$Ny"} = $ant_num;
+
+    $self->{ant_num2prev_pos}{$ant_num} = [ $x, $y, $dir ];
+    push @{$self->{orders}}, [ $x, $y, $dir ];
+    return 1;
 }
 
 =head2 process_turn_new_hill_found
@@ -210,21 +204,13 @@ sub ant_died {
 
 =head2 turn_body
 
-Main part of turn processing. Should return hash ref with
-
- # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
-
-inside if ant moves or
-
- # "$x,$y"   => [ $ant_num, $x, $y ]
-
-if not.
+Main part of turn processing. Should return call 'add_order' method.
 
 =cut
 
 sub turn_body {
     my ( $self, $turn_num, $turn_data ) = @_;
-    return {};
+    return 1;
 }
 
 =head2 set_area_diff
@@ -247,8 +233,7 @@ sub set_area_diff {
         my $ant_num = $self->{pos2ant_num}{"$x,$y"};
         next unless exists $self->{ant_num2prev_pos}{ $ant_num };
 
-        my $prev_info = $self->{ant_num2prev_pos}{ $ant_num };
-        my ( $prev_x, $prev_y, $prev_dir ) = @$prev_info;
+        my ( $prev_x, $prev_y, $prev_dir ) = @{ $self->{ant_num2prev_pos}{ $ant_num } };
         foreach my $Dpos ( @{ $m_cch_move->{$prev_dir}{a} } ) {
             ( $Nx, $Ny ) = $map_obj->pos_plus( $prev_x, $prev_y, $Dpos->[0], $Dpos->[1] );
             #print "ant $ant_num prev $prev_x,$prev_y -> $x, $y + dpos $Dpos->[0], $Dpos->[1] = $Nx, $Ny\n";
