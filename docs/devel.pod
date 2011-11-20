@@ -39,7 +39,8 @@ Run max 500 turns MyBot.pm vs. MyBot.pm
 
 =head2 Required modules
 
- cpanm Archill::Zip
+ cpanm Archive::Zip
+ cpanm File::Slurp
 
 =head2 Config example
 

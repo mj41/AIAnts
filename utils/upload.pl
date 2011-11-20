@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Archill::Zip qw( :ERROR_CODES :CONSTANTS );
+use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use HTTP::Cookies;
 use WWW::Mechanize;
 use File::Slurp;
@@ -20,7 +20,7 @@ my $time_str = sprintf("%04d-%02d-%02d_%02d-%02d-%02d",($lt[5] + 1900),($lt[4] +
 
 my $fpath = $dir . 'upl-' . $time_str . '.zip';
 
-my $zip = Archill::Zip->new();
+my $zip = Archive::Zip->new();
 
 # Add a directory
 $zip->addDirectory('lib/');
