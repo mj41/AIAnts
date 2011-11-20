@@ -118,8 +118,8 @@ $game->do_turn;
 my $map_obj = $bot->map;
 
 # Checks after turn 2 - ant on position 2,2.
-my $m_new = $map_obj->vis_cache_on_map( $bot->{m_new}, padding=>1 );
-is( $map_obj->dump_map( $m_new, 'x' ), <<MAP_END, 'm_new' );
+my $m_area_diff = $map_obj->vis_cache_on_map( $bot->get_area_diff(), padding=>1 );
+is( $map_obj->dump_map( $m_area_diff, 'x' ), <<MAP_END, 'area diff' );
 . . . . . . .
 . . . . . . .
 x . . . x . .

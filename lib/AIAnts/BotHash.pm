@@ -40,13 +40,14 @@ sub setup {
     $self->{max_ant_num} = 0;
     $self->{pos2ant_num} = {};
     $self->{ant_num2prev_pos} = {};
-    $self->{ant_num2hill_info} = {};
+    $self->{ant_num2hill} = {};
 
     $self->{max_hill_num} = 0;
     $self->{pos2hill} = {};
     $self->{hill2pos} = {};
 
-    $self->{m_new} = [];
+    $self->{area_diff} = [];
+    $self->{m_num} = {};
 }
 
 =head2 turn
@@ -59,27 +60,33 @@ sub turn {
     my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
 
     # Init my new hills.
+    my $plus_hill = 0;
     foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
         next if exists $self->{pos2hill}{$pos_str};
         my ( $x, $y ) = @{ $turn_data->{m_hill}{$pos_str} };
         $self->process_turn_new_hill_found( $x, $y );
+        $plus_hill++;
     }
 
     # Remove my ants (ants died).
+    my $minus_ant = 0;
     foreach my $pos_str ( keys %{$self->{pos2ant_num}} ) {
         next if exists $turn_data->{m_ant}{$pos_str};
         my $ant_num = $self->{pos2ant_num}{$pos_str};
         my ( $x, $y ) = split ',', $pos_str;
         $self->process_turn_ant_died( $ant_num, $x, $y );
+        $minus_ant++;
     }
 
     # Add my new ants (ants spawed).
+    my $plus_ant = 0;
     foreach my $pos_str ( keys %{$turn_data->{m_ant}} ) {
         next if exists $self->{pos2ant_num}{$pos_str};
 
         my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
         $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
         $self->process_turn_ant_spawed( $x, $y, $turn_data );
+        $plus_ant++;
     }
 
     # Set 'm_new' - new positions found.
@@ -89,6 +96,25 @@ sub turn {
 
     # pos2ant_num is updated in 'add_order' method.
     $self->{ant_num2prev_pos} = {};
+
+    # todo
+    my $minus_hill = 0;
+
+    # Cache for 'number of ...'
+    my $hill_nof = scalar keys %{$self->{pos2hill}};
+    my $ant_nof = scalar keys %{$self->{pos2ant_num}};
+    $self->{m_num} = {
+        hill => $hill_nof,
+        plus_hill => $plus_hill,
+        minus_hill => $minus_hill,
+
+        ant => $ant_nof,
+        plus_ant => $plus_ant,
+        minust_ant => $minus_ant,
+
+        ant_to_hill_ration => int( $ant_nof / $hill_nof ),
+    };
+
     $self->turn_body( $turn_num, $turn_data );
 
     return 1;
@@ -142,7 +168,7 @@ Called during 'turn_body' if new ant was spawed (found/created).
 =cut
 
 sub new_hill_found {
-    my ( $hill_num, $x, $y ) = @_;
+    my ( $self, $hill_num, $x, $y ) = @_;
     return 1;
 }
 
@@ -159,7 +185,7 @@ sub process_turn_ant_spawed {
     $self->{pos2ant_num}{"$x,$y"} = $ant_num;
 
     my $ant_hill_num = $self->{pos2hill}{"$x,$y"};
-    $self->{ant_num2hill_info}{$ant_num} = [ $x, $y, $ant_hill_num ];
+    $self->{ant_num2hill}{$ant_num} = $ant_hill_num;
 
     $self->ant_spawed( $ant_num, $x, $y, $ant_hill_num );
     return 1;
@@ -172,7 +198,7 @@ Called during 'turn_body' if new ant was spawed (found/created).
 =cut
 
 sub ant_spawed {
-    my ( $ant_num, $x, $y, $ant_hill_num ) = @_;
+    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
     return 1;
 }
 
@@ -185,9 +211,9 @@ Remove my ant (ant died).
 sub process_turn_ant_died {
     my ( $self, $ant_num, $x, $y ) = @_;
 
-    my $ant_hill_num = $self->{ant_num2hill_info}{$ant_num};
+    my $ant_hill_num = $self->{ant_num2hill}{$ant_num};
     $self->ant_died( $ant_num, $x, $y, $ant_hill_num );
-    delete $self->{ant_num2hill_info}{$ant_num};
+    delete $self->{ant_num2hill}{$ant_num};
     return 1;
 }
 
@@ -198,7 +224,7 @@ Called during 'turn_body' if new ant died (was not found on expected position).
 =cut
 
 sub ant_died {
-    my ( $ant_num, $x, $y, $ant_hill_num ) = @_;
+    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
     return 1;
 }
 
@@ -213,9 +239,20 @@ sub turn_body {
     return 1;
 }
 
+=head2 get_area_diff
+
+Return list of positions found explored (maybe again) in this turn.
+
+=cut
+
+sub get_area_diff {
+    my $self = shift;
+    return $self->{area_diff};
+}
+
 =head2 set_area_diff
 
-Set 'm_new' array of positions on map, which ant newly see because of their moves.
+Set 'area_diff' attribute. See L<get_area_diff>.
 
 =cut
 
@@ -243,7 +280,7 @@ sub set_area_diff {
         }
     }
 
-    $self->{m_new} = $diff_a;
+    $self->{area_diff} = $diff_a;
     return 1;
 }
 
@@ -256,7 +293,7 @@ Update data on new turn init (before processing turn_body).
 sub update_on_turn_begin {
     my ( $self, $turn_data ) = @_;
 
-    $self->{m}->update_new_after_turn( $self->{m_new}, $turn_data );
+    $self->{m}->update_new_after_turn( $self->{area_diff}, $turn_data );
     return 1;
 }
 

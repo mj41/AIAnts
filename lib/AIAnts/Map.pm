@@ -434,6 +434,17 @@ sub food_exists {
     return ( exists $self->{otd}{food}{"$x,$y"} );
 }
 
+=head2 enemy_hill_exists
+
+Return 1 if enemy hill exists on provided position.
+
+=cut
+
+sub enemy_hill_exists {
+    my ( $self, $x, $y ) = @_;
+    return ( exists $self->{otd}{e_hill}{"$x,$y"} );
+}
+
 =head2 process_new_initial_pos
 
 Initialize map on new initial position.
@@ -729,33 +740,73 @@ sub set_explored {
     }
 }
 
-=head2
+=head2 get_nearest_by_type
 
-Return position of neerest food without attached ant to it.
+Return position of nearest target of provided type ('e_ant', 'food' ).
 
 =cut
 
-sub get_nearest_free_food {
-    my ( $self, $ant_x, $ant_y, $food2ant ) = @_;
+sub get_nearest_by_type {
+    my ( $self, $target_type, $from_x, $from_y, $skip_targets ) = @_;
+    $skip_targets //= {};
 
     my ( $Fx, $Fy );
-    my $foods = $self->{otd}{food};
+    my $targets = $self->{otd}{$target_type};
     my $min_dist = 1000; # max should be 200 + 200
-    foreach my $food_pos ( values %$foods ) {
-        my ( $food_x, $food_y ) = @$food_pos;
-        next if exists $food2ant->{"$food_x,$food_y"};
-        next if abs( int($food_x/15)-int($ant_x/15) ) + abs( int($food_y/15)-int($ant_y/15) ) > 2;
+    foreach my $target_pos ( values %$targets ) {
+        my ( $target_x, $target_y ) = @$target_pos;
+        next if exists $skip_targets->{"$target_x,$target_y"};
 
-        my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $ant_x, $ant_y, $food_x, $food_y );
+        # todo - bad on borders
+        next if abs( int($target_x/15)-int($from_x/15) ) + abs( int($target_y/15)-int($from_y/15) ) > 2;
+
+        my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $from_x, $from_y, $target_x, $target_y );
         my $dist = $dx + $dy;
         next unless $dist < $min_dist;
 
         $min_dist = $dist;
-        $Fx = $food_x;
-        $Fy = $food_y;
+        $Fx = $target_x;
+        $Fy = $target_y;
     }
 
     return ( $Fx, $Fy );
+}
+
+=head2 get_my_nearest_ant
+
+Return position of nearest attack target.
+
+=cut
+
+sub get_my_nearest_ant {
+    my ( $self, $from_x, $from_y, $skip ) = @_;
+    return $self->get_nearest_by_type( 'm_ant', $from_x, $from_y, $skip );
+}
+
+
+=head2 get_nearest_attack_target
+
+Return position of nearest attack target.
+
+=cut
+
+sub get_nearest_attack_target {
+    my ( $self, $from_x, $from_y, $skip ) = @_;
+
+    my ( $Fx, $Fy ) = $self->get_nearest_by_type( 'e_ant', $from_x, $from_y, $skip );
+    return ( $Fx, $Fy ) if defined $Fx;
+    return $self->get_nearest_by_type( 'e_ant', $from_x, $from_y, $skip );
+}
+
+=head2
+
+Return position of nearest food without attached ant to it.
+
+=cut
+
+sub get_nearest_free_food {
+    my ( $self, $from_x, $from_y, $food2ant ) = @_;
+    return $self->get_nearest_by_type( 'food', $from_x, $from_y, $food2ant );
 }
 
 =head1 Some notes

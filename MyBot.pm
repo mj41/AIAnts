@@ -18,6 +18,21 @@ Google AI Challenge 2011 "AI Ants" game Perl bot.
 
 =head1 METHODS
 
+=head2 get_empty_goal_ant_nof
+
+Number of different items counted for each hill.
+
+=cut
+
+sub get_empty_goal_ant_nof {
+    return {
+        food => 0,
+        explore => 0,
+        attack => 0,
+        defend => 0,
+    };
+}
+
 =head2 setup
 
 Setup.
@@ -30,20 +45,26 @@ sub setup {
 
     $self->log( Dumper( {@_} ) ) if $self->{log};
 
-    $self->{ant2role} = {};
     $self->{ant_goal} = {};
     $self->{food2ant} = {};
+
+    # Number of ants for reach goal.
+    $self->{goal_ant_nof} = $self->get_empty_goal_ant_nof();
+    $self->{hill_goal_ant_nof} = {};
 }
 
-=head2 get_ant_role
+=head2 new_hill_found
 
-Get ant role for newly created ant.
+Called during 'turn_body' if new ant was spawed (found/created).
 
 =cut
 
-sub get_ant_role {
-    my ( $self, $ant_num ) = @_;
-    return 'hungry';
+sub new_hill_found {
+    my ( $self, $hill_num, $x, $y ) = @_;
+
+    $self->log("new hill $hill_num found on $x,$y\n") if $self->{log};
+    $self->{hill_goal_ant_nof}{$hill_num} = get_empty_goal_ant_nof();
+    return 1;
 }
 
 =head2 ant_spawed
@@ -54,7 +75,7 @@ Called during 'turn_body' if new ant was spawed (found/created).
 
 sub ant_spawed {
     my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
-    $self->{ant2role}{$ant_num} = $self->get_ant_role( $ant_num );
+    $self->log("ant $ant_num spawed at $x,$y on hill $ant_hill_num\n") if $self->{log};
     return 1;
 }
 
@@ -66,40 +87,90 @@ Called during 'turn_body' if new ant died (was not found on expected position).
 
 sub ant_died {
     my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
-    delete $self->{ant2role}{$ant_num};
+
+    $self->log("ant $ant_num died at $x,$y\n") if $self->{log};
+    if ( exists $self->{ant2goal}{$ant_num} ) {
+        my $goal_name = $self->{ant2goal}{$ant_num}{name};
+        $self->{goal_ant_nof}{ $goal_name }--;
+        $self->{hill_goal_ant_nof}{ $ant_hill_num }{ $goal_name }--;
+        delete $self->{ant2goal}{$ant_num};
+    }
+    return 1;
 }
 
-=head2 set_ant_goal
 
-Set new ant role for ant_num.
+sub new_defender_needed {
+    my ( $self, $ant_hill_num ) = @_;
+
+    my $ant_to_hill_ratio = $self->{m_num}{ant_to_hill_ration};
+
+    # Too few ants -> gather for food.
+    return 0 if $ant_to_hill_ratio < 5;
+
+    # More than 25% defenders.
+    return 0 if $self->{hill_goal_ant_nof}{ $ant_hill_num }{defend} > ($ant_to_hill_ratio * 0.25);
+
+    return 1;
+}
+
+=head2 get_new_ant_goal
+
+Get new goal for ant.
 
 =cut
 
-sub set_ant_goal {
-    my ( $self, $ant_num, $ant_x, $ant_y, $used ) = @_;
+sub get_new_ant_goal {
+    my ( $self, $ant_num, $ant_x, $ant_y, $ant_hill_num, $used ) = @_;
 
-    my $ant_role = $self->{ant2role}{ $ant_num };
     my ( $x, $y );
     my $map_obj = $self->{m};
+
+    # defend (defend hill where ant was born)
+    # Each 1/8 should defend own hill.
+    if ( $self->new_defender_needed($ant_hill_num) ) {
+        my $attemt = 1;
+        my ( $hill_x, $hill_y ) = @{ $self->{hill2pos}{$ant_hill_num} };
+        while ( 1 ) {
+            ( $x, $y ) = $map_obj->pos_plus(
+                $hill_x, $hill_y,
+                int(rand ($attemt+2)),
+                int(rand ($attemt+2)),
+            );
+            last if $self->{m}->valid_not_used_pos( $x, $y, $used );
+            return 1 if $attemt > 50;
+            $attemt++;
+        }
+
+        my $max_turns = int rand 10;
+        $self->log("goal_get ant $ant_num new 'defend' hill at $x,$y\n") if $self->{log};
+        return {
+            name => 'defend',
+            pos => [ $x, $y ],
+            turns => $max_turns,
+            path => $map_obj->empty_path_temp(),
+        };
+    }
+
+    # enemy_hill
 
     # food
     ( $x, $y ) = $self->{m}->get_nearest_free_food( $ant_x, $ant_y, $self->{food2ant} );
     $self->log("goal ant $ant_num not 'food' near ant $ant_x,$ant_y\n") if $self->{log};
     if ( defined $x ) {
         $self->{food2ant}{"$x,$y"} = $ant_num;
-        $self->{ant2goal}{$ant_num} = {
-            type => 'food',
+        $self->log("goal_get ant $ant_num new 'food' at $x,$y\n") if $self->{log};
+        return {
+            name => 'food',
             pos => [ $x, $y ],
             turns => 20,
             path => $map_obj->empty_path_temp(),
         };
-        $self->log("goal ant $ant_num new 'food' at $x,$y\n") if $self->{log};
         return 1;
     }
 
-    # go (explore)
+    # explore
     my $attemts = 100;
-    my ( $hill_x, $hill_y ) = @{ $self->{ant_num2hill_info}{$ant_num} };
+    my ( $hill_x, $hill_y ) = @{ $self->{hill2pos}{$ant_hill_num} };
     while ( 1 ) {
         my ( $dx, $dir_x, $dy, $dir_y );
         if ( rand(10) > 3 && ($hill_x != $ant_x || $hill_y != $ant_y) ) {
@@ -120,13 +191,30 @@ sub set_ant_goal {
     }
 
     my $max_turns = int(rand(350)**0.5) + 3;
-    $self->{ant2goal}{$ant_num} = {
-        type => 'go',
+    $self->log("goal_get ant $ant_num new 'go' at $x,$y\n") if $self->{log};
+    return {
+        name => 'explore',
         pos => [ $x, $y ],
         turns => $max_turns,
         path => $map_obj->empty_path_temp(),
     };
-    $self->log("goal ant $ant_num new 'go' at $x,$y\n") if $self->{log};
+    return 1;
+}
+
+=head2 set_ant_goal
+
+Set new ant goal.
+
+=cut
+
+sub set_ant_goal {
+    my ( $self, $ant_num, $ant_x, $ant_y, $ant_hill_num, $used ) = @_;
+
+    my $goal = $self->get_new_ant_goal( $ant_num, $ant_x, $ant_y, $ant_hill_num, $used );
+    $self->{ant2goal}{$ant_num} = $goal;
+    my $goal_name = $goal->{name};
+    $self->{goal_ant_nof}{ $goal_name }++;
+    $self->{hill_goal_ant_nof}{ $ant_hill_num }{ $goal_name }++;
     return 1;
 }
 
@@ -137,7 +225,7 @@ Check if ant's goal is still valid.
 =cut
 
 sub goal_still_valid {
-    my ( $self, $ant_num, $ant_x, $ant_y ) = @_;
+    my ( $self, $ant_num, $ant_x, $ant_y, $ant_hill_num ) = @_;
 
     my $goal = $self->{ant2goal}{$ant_num};
     if ( $goal->{turns} <= 0 ) {
@@ -145,23 +233,35 @@ sub goal_still_valid {
         return 0;
     }
 
-    my $type = $goal->{type};
+    my $goal_name = $goal->{name};
     my ( $x, $y ) = @{ $goal->{pos} };
 
-    if ( $type eq 'food' ) {
+    # food
+    if ( $goal_name eq 'food' ) {
         return 1 if $self->{m}->food_exists($x,$y);
-        $self->log("goal ant $ant_num deleted - no food on $x,$y\n") if $self->{log};
+        $self->log("goal ant $ant_num removed - no food on $x,$y\n") if $self->{log};
         delete $self->{food2ant}{"$x,$y"};
-        return 0;
-
-    # go
-    } elsif ( $type eq 'go' ) {
-        return 1 if $x != $ant_x || $y != $ant_y;
-        $self->log("goal ant $ant_num deleted - on postion on $x,$y\n") if $self->{log};
         return 0;
     }
 
-    $self->log("goal ant $ant_num unknown type '$type'\n") if $self->{log};
+    # defend
+    if ( $goal_name eq 'defend' ) {
+        # until turns limit reached
+        return 1;
+    }
+
+    # explore
+    if ( $goal_name eq 'explore' ) {
+        if ( $self->{hill_goal_ant_nof}{ $ant_hill_num }{food} < $self->{m_num}{ant_to_hill_ration} * 0.5 ) {
+            $self->log("goal ant $ant_num removed - too few 'food' goals \n") if $self->{log};
+            return 0;
+        }
+        return 1 if $x != $ant_x || $y != $ant_y;
+        $self->log("goal ant $ant_num removed - on postion on $x,$y\n") if $self->{log};
+        return 0;
+    }
+
+    $self->log("goal ant $ant_num unknown type '$goal_name'\n") if $self->{log};
     return 1;
 }
 
@@ -205,9 +305,19 @@ sub turn_body {
     #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
     # Processing 'foreach ant', so we need to track used locations.
-    my $used = {
-        map { $_ => 1 } keys %{$self->{pos2hill}}
+    my $used = {};
+
+    # Do not move back to hill.
+    foreach ( keys %{$self->{pos2hill}} ) {
+        $used->{$_} = 1;
     };
+    # Do not move on food - blocked.
+    foreach my $data ( values %{$turn_data->{food}} ) {
+        my ( $x, $y ) = @$data;
+        $used->{"$x,$y"} = 1;
+    };
+    # Do not move to positions where own ats are. These keys are
+    # deleted as ants move to other positions.
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
         $used->{"$x,$y"} = 1;
@@ -217,23 +327,24 @@ sub turn_body {
         my ( $x, $y ) = @$data;
 
         my $ant_num = $self->{pos2ant_num}{"$x,$y"};
+        my $ant_hill_num = $self->{ant_num2hill}{$ant_num};
 
         if ( not exists $self->{ant2goal}{$ant_num} ) {
             $self->log("goal ant $ant_num setting the first goal\n") if $self->{log};
-            $self->set_ant_goal( $ant_num, $x, $y, $used );
+            $self->set_ant_goal( $ant_num, $x, $y, $ant_hill_num, $used );
 
-        } elsif ( not $self->goal_still_valid($ant_num,$x,$y) ) {
-            $self->log("goal ant $ant_num no valid, setting new goal set\n") if $self->{log};
-            $self->set_ant_goal( $ant_num, $x, $y, $used );
+        } elsif ( not $self->goal_still_valid($ant_num,$x,$y,$ant_hill_num) ) {
+            $self->log("goal ant $ant_num no valid, setting new goal\n") if $self->{log};
+            $self->set_ant_goal( $ant_num, $x, $y, $ant_hill_num, $used );
         }
         my ( $dir, $Nx, $Ny ) = $self->step_to_goal( $ant_num, $x, $y, $used, $turn_data );
 
         if ( (not defined $dir) || ($Nx == $x && $Ny == $y) ) {
-            $self->log("move ant $ant_num stay on $x,$y\n") if $self->{log};
+            #$self->log("... move ant $ant_num stay on $x,$y\n") if $self->{log};
             $used->{"$x,$y"} = 2;
 
         } else {
-            $self->log("move ant $ant_num to $Nx,$Ny\n") if $self->{log};
+            #$self->log("... move ant $ant_num ($x,$y) $dir to $Nx,$Ny\n") if $self->{log};
             $self->add_order( $ant_num, $x, $y, $dir, $Nx, $Ny );
             delete $used->{"$x,$y"};
             $used->{"$Nx,$Ny"} = 2;
@@ -245,6 +356,17 @@ sub turn_body {
     return 1;
 }
 
+=head2 game_over
+
+Called when game ends.
+
+=cut
+
+sub game_over {
+    my ( $self ) = @_;
+    $self->log( Dumper($self->{ant2goal})."\n" ) if $self->{log};
+    return $self->SUPER::game_over();
+}
 
 =head1 AUTHOR
 
