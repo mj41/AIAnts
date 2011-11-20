@@ -46,17 +46,34 @@ sub get_ant_role {
     return 'hungry';
 }
 
-=head2 new_ant_created
+=head2 ant_spawed
 
-Called during 'turn_body' if new ant was found/created.
+Called during 'turn_body' if new ant was spawed (found/created).
 
 =cut
 
-sub new_ant_created {
-    my ( $self, $ant_num ) = @_;
+sub ant_spawed {
+    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
     $self->{ant2role}{$ant_num} = $self->get_ant_role( $ant_num );
+    return 1;
 }
 
+=head2 ant_died
+
+Called during 'turn_body' if new ant died (was not found on expected position).
+
+=cut
+
+sub ant_died {
+    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
+    delete $self->{ant2role}{$ant_num};
+}
+
+=head2 set_ant_goal
+
+Set new ant role for ant_num.
+
+=cut
 
 sub set_ant_goal {
     my ( $self, $ant_num, $ant_x, $ant_y, $used ) = @_;
@@ -113,6 +130,11 @@ sub set_ant_goal {
     return 1;
 }
 
+=head2 goal_still_valid
+
+Check if ant's goal is still valid.
+
+=cut
 
 sub goal_still_valid {
     my ( $self, $ant_num, $ant_x, $ant_y ) = @_;
@@ -126,7 +148,6 @@ sub goal_still_valid {
     my $type = $goal->{type};
     my ( $x, $y ) = @{ $goal->{pos} };
 
-    # food
     if ( $type eq 'food' ) {
         return 1 if $self->{m}->food_exists($x,$y);
         $self->log("goal ant $ant_num deleted - no food on $x,$y\n") if $self->{log};
@@ -144,6 +165,11 @@ sub goal_still_valid {
     return 1;
 }
 
+=head2 step_to_goal
+
+Return ( $dir, $Nx, $Ny ) of next step to meat ant goal.
+
+=cut
 
 sub step_to_goal {
     my ( $self, $ant_num, $ant_x, $ant_y, $used, $turn_data ) = @_;

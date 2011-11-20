@@ -72,20 +72,33 @@ sub turn {
     my ( $self, $turn_num, $turn_data ) = @_;
 
     # Init my new hills.
-    foreach my $data ( values %{$turn_data->{m_hill}} ) {
-        my ( $x, $y ) = @$data;
-        next if exists $self->{pos2hill}{"$x,$y"};
-        $self->init_new_hill( $x, $y );
+    foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
+        next if exists $self->{pos2hill}{$pos_str};
+        my ( $x, $y ) = @{ $turn_data->{m_hill}{$pos_str} };
+        $self->process_turn_new_hill_found( $x, $y );
     }
 
-    foreach my $data ( values %{$turn_data->{m_ant}} ) {
-        my ( $x, $y ) = @$data;
-        unless ( exists $self->{pos2ant_num}{"$x,$y"} ) {
-            $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
-            $self->init_new_ant( $x, $y );
-        }
+    # Remove my ants (ants died).
+    foreach my $pos_str ( keys %{$self->{pos2ant_num}} ) {
+        next if exists $turn_data->{m_ant}{$pos_str};
+
+        my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
+        my $ant_num = @{ $self->{pos2ant_num}{$pos_str} };
+        $self->process_turn_ant_died( $ant_num, $x, $y );
     }
+
+    # Add my new ants (ants spawed).
+    foreach my $pos_str ( keys %{$turn_data->{m_ant}} ) {
+        next if exists $self->{pos2ant_num}{$pos_str};
+
+        my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
+        $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
+        $self->process_turn_ant_spawed( $x, $y, $turn_data );
+    }
+
+    # Set 'm_new' - new positions found.
     $self->set_area_diff( $turn_data );
+    # Update map.
     $self->update_on_turn_begin( $turn_data );
 
     my $changes = $self->turn_body( $turn_num, $turn_data );
@@ -104,34 +117,48 @@ sub turn {
         }
 
         # move
-        $self->{pos2ant_num}->{"$Nx,$Ny"} = $ant_num;
-        $self->{ant_num2prev_pos}->{$ant_num} = [ $x, $y, $dir ];
+        $self->{pos2ant_num}{"$Nx,$Ny"} = $ant_num;
+        $self->{ant_num2prev_pos}{$ant_num} = [ $x, $y, $dir ];
         push @orders, [ $x, $y, $dir ];
     }
     return @orders;
 }
 
-=head2 init_new_hill
+=head2 process_turn_new_hill_found
 
 Initialize new hill.
 
 =cut
 
-sub init_new_hill {
+sub process_turn_new_hill_found {
     my ( $self, $x, $y ) = @_;
+
     my $hill_num = ++$self->{max_hill_num};
     $self->{pos2hill}{"$x,$y"} = $hill_num;
     $self->{hill2pos}{$hill_num} = [ $x, $y ];
+
+    $self->new_hill_found( $hill_num, $x, $y );
     return 1;
 }
 
-=head2 init_new_ant
+=head2 new_hill_found
 
-Initialize new ant.
+Called during 'turn_body' if new ant was spawed (found/created).
 
 =cut
 
-sub init_new_ant {
+sub new_hill_found {
+    my ( $hill_num, $x, $y ) = @_;
+    return 1;
+}
+
+=head2 process_turn_ant_spawed
+
+Initialize my new ant. Call $self->ant_spawed( $ant_num, $x, $y, $ant_hill_num ).
+
+=cut
+
+sub process_turn_ant_spawed {
     my ( $self, $x, $y ) = @_;
 
     my $ant_num = ++$self->{max_ant_num};
@@ -140,19 +167,45 @@ sub init_new_ant {
     my $ant_hill_num = $self->{pos2hill}{"$x,$y"};
     $self->{ant_num2hill_info}{$ant_num} = [ $x, $y, $ant_hill_num ];
 
-    $self->new_ant_created( $self->{max_ant_num} );
-
-    return $self->{max_ant_num};
+    $self->ant_spawed( $ant_num, $x, $y, $ant_hill_num );
+    return 1;
 }
 
-=head2 new_ant_created
+=head2 ant_spawed
 
-Called during 'turn_body' if new ant was found/created.
+Called during 'turn_body' if new ant was spawed (found/created).
 
 =cut
 
-sub new_ant_created {
-    my ( $self, $ant_num ) = @_;
+sub ant_spawed {
+    my ( $ant_num, $x, $y, $ant_hill_num ) = @_;
+    return 1;
+}
+
+=head2 process_turn_ant_died
+
+Remove my ant (ant died).
+
+=cut
+
+sub process_turn_ant_died {
+    my ( $self, $ant_num, $x, $y ) = @_;
+
+    my $ant_hill_num = $self->{ant_num2hill_info}{$ant_num};
+    $self->ant_died( $ant_num, $x, $y, $ant_hill_num );
+    delete $self->{ant_num2hill_info}{$ant_num};
+    return 1;
+}
+
+=head2 ant_died
+
+Called during 'turn_body' if new ant died (was not found on expected position).
+
+=cut
+
+sub ant_died {
+    my ( $ant_num, $x, $y, $ant_hill_num ) = @_;
+    return 1;
 }
 
 =head2 turn_body
@@ -219,6 +272,7 @@ sub update_on_turn_begin {
     my ( $self, $turn_data ) = @_;
 
     $self->{m}->update_new_after_turn( $self->{m_new}, $turn_data );
+    return 1;
 }
 
 
