@@ -54,7 +54,7 @@ sub turn_body {
         my $dir_num = int rand 4;
         my $attemt = 1;
         RANDOM: while ( 1 ) {
-            $dir = $dirs->[ $dir_num ];
+            $dir = $dirs->[ ($dir_num+$attemt) % 4 ];
             if ( $dir eq 'N' ) {
                 $Dx = -1;
                 $Dy =  0;
@@ -78,7 +78,6 @@ sub turn_body {
             }
             last RANDOM if $attemt == 4;
             $attemt++;
-            $dir_num++;
         }
     }
 

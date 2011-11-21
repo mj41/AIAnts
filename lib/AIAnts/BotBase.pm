@@ -135,7 +135,7 @@ Called when game ends.
 
 sub game_over {
     my ( $self ) = @_;
-    $self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
+    $self->log( $self->{m}->dump(1) . "\n" ) if $self->{log};
 }
 
 =head2 log

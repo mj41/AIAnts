@@ -7,13 +7,25 @@ use FindBin;
 
 use lib "$FindBin::Bin";
 use lib "$FindBin::Bin/lib";
-use MyBot;
+use lib "$FindBin::Bin/bots";
+
 use AIAnts::Game;
 
+BEGIN {
+    my $bot_impl = $ARGV[0] || '';
+    if ( $bot_impl ne '' ) {
+        require $bot_impl;
+    } else {
+        require 'MyBot.pm';
+    }
+}
 
-my $log_fpath = $ARGV[0] || undef;  # log file path
-my $ver = $ARGV[1] // 1;            # verbose level
-my $in_fpath = $ARGV[2];            # input (game commands) file path
+
+my $log_fpath = $ARGV[1] || undef;  # log file path
+my $ver = $ARGV[2] // 1;            # verbose level
+my $in_fpath = $ARGV[3];            # input (game commands) file path
+
+
 
 # make unbuffered
 select STDIN; $| = 1;

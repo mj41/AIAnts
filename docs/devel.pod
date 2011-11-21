@@ -24,16 +24,16 @@ Run max 30 turns MyBot.pm vs. python/GreedyBot.py on maze_02p_02 map
 
  ./utils/run-local.sh 30
 
-Run max 500 turns MyBot.pm vs. MyBot.pm
+Run max 500 turns MyBot.pm vs. bots/RandomBot.pm
 
- ./utils/run-local.sh 500 two
+ ./utils/run-local.sh 500 bots/RandomBot.pm
 
 =head2 Use example bot
 
  git status -- MyBot.pm
  git diff MyBot.pm
  rm MyBot.pm
- ./utils/user-example-bot.sh bots/02-random.pm
+ ./utils/use-example-bot.sh bots/RandomBot.pm
 
 =head1 Upload
 
