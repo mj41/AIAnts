@@ -291,7 +291,7 @@ Main part of turn processing. Should call 'add_order' method during processing.
 sub turn_body {
     my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
 
-    $self->log( "turn $turn_num, time " . time() . "\n" ) if $self->{log};
+    $self->log( "turn $turn_num\n" ) if $self->{log};
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
     #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 

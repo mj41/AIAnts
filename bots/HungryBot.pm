@@ -46,39 +46,20 @@ sub turn_body {
     my $used = $self->get_initial_used( $turn_data );
 
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
-        my ( $x, $y ) = @$data;
+        my ( $ant_x, $ant_y ) = @$data;
+        my $ant = $self->{pos2ant}{"$ant_x,$ant_y"};
 
-        my $ant = $self->{pos2ant}{"$x,$y"};
-        my $dir;
-        my ( $Dx, $Dy, $Nx, $Ny );
-        my $dir_num = int rand 4;
-        my $attemt = 1;
-        RANDOM: while ( 1 ) {
-            $dir = $dirs->[ ($dir_num+$attemt) % 4 ];
-            if ( $dir eq 'N' ) {
-                $Dx = -1;
-                $Dy =  0;
-            } elsif ( $dir eq 'E' ) {
-                $Dx =  0;
-                $Dy =  1;
-            } elsif ( $dir eq 'S' ) {
-                $Dx =  1;
-                $Dy =  0;
-            } elsif ( $dir eq 'W' ) {
-                $Dx =  0;
-                $Dy = -1;
-            }
+        my ( $food_x, $food_y ) = $self->{m}->get_nearest_free_food( $ant_x, $ant_y );
+        next unless defined $food_x;
 
-            ( $Nx, $Ny ) = $self->{m}->pos_plus( $x, $y, $Dx, $Dy );
-            if ( $self->{m}->valid_not_used_pos( $Nx, $Ny, $used ) ) {
-                $self->add_order( $ant, $x, $y, $dir, $Nx, $Ny );
-                delete $used->{"$x,$y"};
-                $used->{"$Nx,$Ny"} = 2;
-                last RANDOM;
-            }
-            last RANDOM if $attemt == 4;
-            $attemt++;
-        }
+        my ( $dir, $Nx, $Ny ) = $self->{m}->dir_from_to( $ant_x, $ant_y, $food_x, $food_y, $used );
+        next unless defined $dir;
+
+        $self->add_order( $ant, $ant_x, $ant_y, $dir, $Nx, $Ny );
+        delete $used->{"$ant_x,$ant_y"};
+        $used->{"$Nx,$Ny"} = 2;
+        
+        $self->log("ant $ant on $ant_x,$ant_y, nearest food $food_x,$food_y, direction $dir to $Nx,$Ny\n") if $self->{log};
     }
 
     $self->log("\n") if $self->{log};

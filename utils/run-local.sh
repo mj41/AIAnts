@@ -39,8 +39,6 @@ if [ ! -z "$SEC_BOT" ]; then
 
     echo > ../../aiants/temp/game-out.txt
     echo > ../../aiants/temp/game-outB.txt
-    echo > game_logs/0.bot0.error
-    echo > game_logs/0.bot1.error
 
     echo "Running 'MyBot.pm' vs. '$SEC_BOT'"
 
@@ -48,8 +46,8 @@ if [ ! -z "$SEC_BOT" ]; then
       --turntime=100 --loadtime=1000 --end_wait=0.25 \
       --verbose --log_dir game_logs -R -S -I -O -E \
       --map_file maps/maze/maze_02p_02.map \
-      'perl ../../aiants/MyBot.pl MyBot.pm temp/game-out.txt' \
-      'perl ../../aiants/MyBot.pl bots/RandomBot.pm temp/game-outB.txt'
+      "perl ../../aiants/MyBot.pl MyBot.pm temp/game-out.txt" \
+      "perl ../../aiants/MyBot.pl $SEC_BOT temp/game-outB.txt"
 
     cd ../../aiants/
 
@@ -68,12 +66,15 @@ if [ ! -z "$SEC_BOT" ]; then
     cat ../aichallenge/ants/game_logs/0.bot0.error
     echo
 
+    echo "Too see bots output use:"
+    echo "  less temp/game-out.txt"
+    echo "  less temp/game-outB.txt"
+
 
 # Perl vs. Python
 else
 
     echo > ../../aiants/temp/game-out.txt
-    echo > game_logs/0.bot0.error
 
     ./playgame.py --turns $TURNS --player_seed 42 \
       --turntime=100 --loadtime=1000 --end_wait=0.25 \
