@@ -126,6 +126,36 @@ sub turn {
     return 1;
 }
 
+=head2 get_initial_used
+
+Return hash with position not possible to move on (including own hills).
+
+=cut
+
+sub get_initial_used {
+    my ( $self, $turn_data ) = @_;
+    
+    # Processing 'foreach ant', so we need to track used locations.
+    my $used = {};
+
+    # Do not move back to hill.
+    foreach ( keys %{$self->{pos2hill}} ) {
+        $used->{$_} = 1;
+    };
+    # Do not move on food - blocked.
+    foreach my $data ( values %{$turn_data->{food}} ) {
+        my ( $x, $y ) = @$data;
+        $used->{"$x,$y"} = 1;
+    };
+    # Do not move to positions where own ats are. These keys are
+    # deleted as ants move to other positions.
+    foreach my $data ( values %{$turn_data->{m_ant}} ) {
+        my ( $x, $y ) = @$data;
+        $used->{"$x,$y"} = 1;
+    }
+    return $used;
+}
+
 =head2 add_order
 
 Add order to 'orders' attribute and update attributes related to ant position change.

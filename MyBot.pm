@@ -304,24 +304,7 @@ sub turn_body {
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
     #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
-    # Processing 'foreach ant', so we need to track used locations.
-    my $used = {};
-
-    # Do not move back to hill.
-    foreach ( keys %{$self->{pos2hill}} ) {
-        $used->{$_} = 1;
-    };
-    # Do not move on food - blocked.
-    foreach my $data ( values %{$turn_data->{food}} ) {
-        my ( $x, $y ) = @$data;
-        $used->{"$x,$y"} = 1;
-    };
-    # Do not move to positions where own ats are. These keys are
-    # deleted as ants move to other positions.
-    foreach my $data ( values %{$turn_data->{m_ant}} ) {
-        my ( $x, $y ) = @$data;
-        $used->{"$x,$y"} = 1;
-    }
+    my $used = $self->get_initial_used( $turn_data );
 
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
