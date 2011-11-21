@@ -757,9 +757,6 @@ sub get_nearest_by_type {
         my ( $target_x, $target_y ) = @$target_pos;
         next if exists $skip_targets->{"$target_x,$target_y"};
 
-        # todo - bad on borders
-        next if abs( int($target_x/15)-int($from_x/15) ) + abs( int($target_y/15)-int($from_y/15) ) > 2;
-
         my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $from_x, $from_y, $target_x, $target_y );
         my $dist = $dx + $dy;
         next unless $dist < $min_dist;
