@@ -32,11 +32,11 @@ sub setup {
 
 Main part of turn processing. Should return hash ref with
 
- # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+ # "$Nx,$Ny" => [ $ant, $x, $y, $dir, $Nx, $Ny ]
 
 inside if ant moves or
 
- # "$x,$y"   => [ $ant_num, $x, $y ]
+ # "$x,$y"   => [ $ant, $x, $y ]
 
 if not.
 
@@ -58,7 +58,7 @@ sub turn_body {
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
 
-        my $ant_num = $self->{pos2ant_num}{"$x,$y"};
+        my $ant = $self->{pos2ant}{"$x,$y"};
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
         my $dir_num = int rand 3;
@@ -84,13 +84,13 @@ sub turn_body {
                   && (not exists $turn_data->{m_ant}{"$Nx,$Ny"})
                )
             {
-                $changes->{"$Nx,$Ny"} = [ $ant_num, $x, $y, $dir, $Nx, $Ny ];
+                $changes->{"$Nx,$Ny"} = [ $ant, $x, $y, $dir, $Nx, $Ny ];
                 last;
             }
             $dir_num++;
             last if $dir_num == 4;
         }
-        $changes->{"$x,$y"} = [ $ant_num, $x, $y, $dir, undef, undef ] if $dir_num == 4;
+        $changes->{"$x,$y"} = [ $ant, $x, $y, $dir, undef, undef ] if $dir_num == 4;
     }
 
     $self->log( "\n" ) if $self->{log};

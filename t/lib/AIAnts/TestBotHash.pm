@@ -26,10 +26,10 @@ sub test_order_to_order {
     my ( $self, $x, $y, $dir, $Nx, $Ny ) = @_;
 
     die "No ant num on position $x,$y.\n"
-        unless exists $self->{pos2ant_num}{"$x,$y"};
+        unless exists $self->{pos2ant}{"$x,$y"};
 
-    my $ant_num = $self->{pos2ant_num}{"$x,$y"};
-    return ( $ant_num, $x, $y, $dir, $Nx, $Ny );
+    my $ant = $self->{pos2ant}{"$x,$y"};
+    return ( $ant, $x, $y, $dir, $Nx, $Ny );
 }
 
 

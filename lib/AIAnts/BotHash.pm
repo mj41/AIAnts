@@ -37,17 +37,20 @@ sub setup {
 
     $self->{turn_num} = 0;
 
-    $self->{max_ant_num} = 0;
-    $self->{pos2ant_num} = {};
-    $self->{ant_num2prev_pos} = {};
-    $self->{ant_num2hill} = {};
+    $self->{max_ant} = 0;
+    $self->{pos2ant} = {};
+    $self->{ant2prev_pos} = {};
+    $self->{ant2hill} = {};
 
-    $self->{max_hill_num} = 0;
+    $self->{max_hill} = 0;
     $self->{pos2hill} = {};
     $self->{hill2pos} = {};
 
+    $self->{enemies} = {};
+    $self->{e_hill_info} = {};
+
     $self->{area_diff} = [];
-    $self->{m_num} = {};
+    $self->{chc_num} = {};
 }
 
 =head2 turn
@@ -59,34 +62,46 @@ See L<AIANts::BotBase::turn> method documentation.
 sub turn {
     my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
 
+
+    my $turn_diff = {};
+
     # Init my new hills.
-    my $plus_hill = 0;
     foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
         next if exists $self->{pos2hill}{$pos_str};
         my ( $x, $y ) = @{ $turn_data->{m_hill}{$pos_str} };
-        $self->process_turn_new_hill_found( $x, $y );
-        $plus_hill++;
+        $self->turn_pr_my_new_hill_found( $x, $y );
+        $turn_diff->{m_hill}{add}{$pos_str} = 1;
+    }
+
+    # Init my new hills.
+    foreach my $pos_str ( keys %{$turn_data->{e_hill}} ) {
+        if ( exists $self->{e_hill_info}{$pos_str} ) {
+            # update last seen turn_num
+            $self->{e_hill_info}{$pos_str}[3] = $turn_num;
+            next;
+        }
+        my ( $x, $y, $owner ) = @{ $turn_data->{e_hill}{$pos_str} };
+        $self->turn_pr_e_new_hill_found( $x, $y, $owner, $turn_num );
+        $turn_diff->{e_hill}{rm}{$pos_str} = 1;
     }
 
     # Remove my ants (ants died).
-    my $minus_ant = 0;
-    foreach my $pos_str ( keys %{$self->{pos2ant_num}} ) {
+    foreach my $pos_str ( keys %{$self->{pos2ant}} ) {
         next if exists $turn_data->{m_ant}{$pos_str};
-        my $ant_num = $self->{pos2ant_num}{$pos_str};
+        my $ant = $self->{pos2ant}{$pos_str};
         my ( $x, $y ) = split ',', $pos_str;
-        $self->process_turn_ant_died( $ant_num, $x, $y );
-        $minus_ant++;
+        $self->turn_pr_ant_died( $ant, $x, $y );
+        $turn_diff->{m_ant}{add}{$pos_str} = 1;
     }
 
     # Add my new ants (ants spawed).
-    my $plus_ant = 0;
     foreach my $pos_str ( keys %{$turn_data->{m_ant}} ) {
-        next if exists $self->{pos2ant_num}{$pos_str};
+        next if exists $self->{pos2ant}{$pos_str};
 
         my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
         $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
-        $self->process_turn_ant_spawed( $x, $y, $turn_data );
-        $plus_ant++;
+        $self->turn_pr_ant_spawed( $x, $y, $turn_data );
+        $turn_diff->{m_ant}{rm}{$pos_str} = 1;
     }
 
     # Set 'm_new' - new positions found.
@@ -95,27 +110,18 @@ sub turn {
     $self->update_on_turn_begin( $turn_data );
 
     # pos2ant_num is updated in 'add_order' method.
-    $self->{ant_num2prev_pos} = {};
-
-    # todo
-    my $minus_hill = 0;
+    $self->{ant2prev_pos} = {};
 
     # Cache for 'number of ...'
     my $hill_nof = scalar keys %{$self->{pos2hill}};
-    my $ant_nof = scalar keys %{$self->{pos2ant_num}};
-    $self->{m_num} = {
+    my $ant_nof = scalar keys %{$self->{pos2ant}};
+    $self->{chc_num} = {
         hill => $hill_nof,
-        plus_hill => $plus_hill,
-        minus_hill => $minus_hill,
-
         ant => $ant_nof,
-        plus_ant => $plus_ant,
-        minust_ant => $minus_ant,
-
         ant_to_hill_ration => int( $ant_nof / $hill_nof ),
     };
 
-    $self->turn_body( $turn_num, $turn_data );
+    $self->turn_body( $turn_num, $turn_data, $turn_diff );
 
     return 1;
 }
@@ -127,7 +133,7 @@ Add order to 'orders' attribute and update attributes related to ant position ch
 =cut
 
 sub add_order {
-    my ( $self, $ant_num, $x, $y, $dir, $Nx, $Ny ) = @_;
+    my ( $self, $ant, $x, $y, $dir, $Nx, $Ny ) = @_;
 
     # not move
     return 1 unless defined $Nx;
@@ -136,24 +142,24 @@ sub add_order {
     # move
 
     # Delete old and set new ant_num pos.
-    delete $self->{pos2ant_num}{"$x,$y"};
-    $self->{pos2ant_num}{"$Nx,$Ny"} = $ant_num;
+    delete $self->{pos2ant}{"$x,$y"};
+    $self->{pos2ant}{"$Nx,$Ny"} = $ant;
 
-    $self->{ant_num2prev_pos}{$ant_num} = [ $x, $y, $dir ];
+    $self->{ant2prev_pos}{$ant} = [ $x, $y, $dir ];
     push @{$self->{orders}}, [ $x, $y, $dir ];
     return 1;
 }
 
-=head2 process_turn_new_hill_found
+=head2 turn_pr_my_new_hill_found
 
-Initialize new hill.
+Initialize our new hill.
 
 =cut
 
-sub process_turn_new_hill_found {
+sub turn_pr_my_new_hill_found {
     my ( $self, $x, $y ) = @_;
 
-    my $hill_num = ++$self->{max_hill_num};
+    my $hill_num = ++$self->{max_hill};
     $self->{pos2hill}{"$x,$y"} = $hill_num;
     $self->{hill2pos}{$hill_num} = [ $x, $y ];
 
@@ -163,7 +169,7 @@ sub process_turn_new_hill_found {
 
 =head2 new_hill_found
 
-Called during 'turn_body' if new ant was spawed (found/created).
+Called during 'turn_body' if our new hill was found.
 
 =cut
 
@@ -172,22 +178,47 @@ sub new_hill_found {
     return 1;
 }
 
-=head2 process_turn_ant_spawed
+=head2 turn_pr_e_new_hill_found
 
-Initialize my new ant. Call $self->ant_spawed( $ant_num, $x, $y, $ant_hill_num ).
+Initialize new enemy hill info.
 
 =cut
 
-sub process_turn_ant_spawed {
+sub turn_pr_e_new_hill_found {
+    my ( $self, $x, $y, $owner, $turn_num ) = @_;
+
+    $self->{e_hill_info}{"$x,$y"} = [ $x, $y, $owner, $turn_num ];
+    $self->new_hill_found( $x, $y, $owner );
+}
+
+=head2 new_enemy_hill_found
+
+Called during 'turn_body' if new enemy hill was found.
+
+=cut
+
+sub new_enemy_hill_found {
+    my ( $self, $x, $y, $owner ) = @_;
+    return 1;
+}
+
+
+=head2 turn_pr_ant_spawed
+
+Initialize my new ant. Call $self->ant_spawed( $ant, $x, $y, $ant_hill ).
+
+=cut
+
+sub turn_pr_ant_spawed {
     my ( $self, $x, $y ) = @_;
 
-    my $ant_num = ++$self->{max_ant_num};
-    $self->{pos2ant_num}{"$x,$y"} = $ant_num;
+    my $ant = ++$self->{max_ant};
+    $self->{pos2ant}{"$x,$y"} = $ant;
 
-    my $ant_hill_num = $self->{pos2hill}{"$x,$y"};
-    $self->{ant_num2hill}{$ant_num} = $ant_hill_num;
+    my $ant_hill = $self->{pos2hill}{"$x,$y"};
+    $self->{ant2hill}{$ant} = $ant_hill;
 
-    $self->ant_spawed( $ant_num, $x, $y, $ant_hill_num );
+    $self->ant_spawed( $ant, $x, $y, $ant_hill );
     return 1;
 }
 
@@ -198,22 +229,22 @@ Called during 'turn_body' if new ant was spawed (found/created).
 =cut
 
 sub ant_spawed {
-    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
+    my ( $self, $ant, $x, $y, $ant_hill ) = @_;
     return 1;
 }
 
-=head2 process_turn_ant_died
+=head2 turn_pr_ant_died
 
 Remove my ant (ant died).
 
 =cut
 
-sub process_turn_ant_died {
-    my ( $self, $ant_num, $x, $y ) = @_;
+sub turn_pr_ant_died {
+    my ( $self, $ant, $x, $y ) = @_;
 
-    my $ant_hill_num = $self->{ant_num2hill}{$ant_num};
-    $self->ant_died( $ant_num, $x, $y, $ant_hill_num );
-    delete $self->{ant_num2hill}{$ant_num};
+    my $ant_hill = $self->{ant2hill}{$ant};
+    $self->ant_died( $ant, $x, $y, $ant_hill );
+    delete $self->{ant2hill}{$ant};
     return 1;
 }
 
@@ -224,7 +255,7 @@ Called during 'turn_body' if new ant died (was not found on expected position).
 =cut
 
 sub ant_died {
-    my ( $self, $ant_num, $x, $y, $ant_hill_num ) = @_;
+    my ( $self, $ant, $x, $y, $ant_hill ) = @_;
     return 1;
 }
 
@@ -235,7 +266,7 @@ Main part of turn processing. Should return call 'add_order' method.
 =cut
 
 sub turn_body {
-    my ( $self, $turn_num, $turn_data ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
     return 1;
 }
 
@@ -267,13 +298,13 @@ sub set_area_diff {
     my $processed = {};
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
-        my $ant_num = $self->{pos2ant_num}{"$x,$y"};
-        next unless exists $self->{ant_num2prev_pos}{ $ant_num };
+        my $ant = $self->{pos2ant}{"$x,$y"};
+        next unless exists $self->{ant2prev_pos}{ $ant };
 
-        my ( $prev_x, $prev_y, $prev_dir ) = @{ $self->{ant_num2prev_pos}{ $ant_num } };
+        my ( $prev_x, $prev_y, $prev_dir ) = @{ $self->{ant2prev_pos}{ $ant } };
         foreach my $Dpos ( @{ $m_cch_move->{$prev_dir}{a} } ) {
             ( $Nx, $Ny ) = $map_obj->pos_plus( $prev_x, $prev_y, $Dpos->[0], $Dpos->[1] );
-            #print "ant $ant_num prev $prev_x,$prev_y -> $x, $y + dpos $Dpos->[0], $Dpos->[1] = $Nx, $Ny\n";
+            #print "ant $ant prev $prev_x,$prev_y -> $x, $y + dpos $Dpos->[0], $Dpos->[1] = $Nx, $Ny\n";
             next if exists $processed->{"$Nx,$Ny"};
             $processed->{"$Nx,$Ny"} = 1;
             push @$diff_a, [ $Nx, $Ny ];

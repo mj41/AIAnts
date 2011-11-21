@@ -30,11 +30,11 @@ sub setup {
 
 Main part of turn processing. Should return hash ref with
 
- # "$Nx,$Ny" => [ $ant_num, $x, $y, $dir, $Nx, $Ny ]
+ # "$Nx,$Ny" => [ $ant, $x, $y, $dir, $Nx, $Ny ]
 
 inside if ant moves or
 
- # "$x,$y"   => [ $ant_num, $x, $y ]
+ # "$x,$y"   => [ $ant, $x, $y ]
 
 if not.
 

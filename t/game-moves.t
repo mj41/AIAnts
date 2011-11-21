@@ -70,6 +70,15 @@ o % a o 2 . . . . .
 MAP_END
 
 
+# Check internal structure about enemy hills.
+is_deeply(
+    $bot->{e_hill_info},
+    #  pos_str           x, y, owner, turn_num,
+    { '1,4'         => [ 1, 4,     2,        1, ] },
+    'e_hill_info'
+);
+
+
 # Prepare turn 2 game output and bot orders. Receive info about position 2,2
 # where ant just moved.
 
@@ -172,7 +181,6 @@ is_deeply(
     'otd e_ant'
 );
 
-
 is_deeply(
     [ $map_obj->get_nearest_free_food( 2,2, {} ) ],
     [ 2,3 ],
@@ -184,7 +192,6 @@ is_deeply(
     [ 0,2 ],
     'get_nearest_free_food 2'
 );
-
 
 
 # Prepare turn 3 game output and bot orders. Receive info about position 1,2
@@ -235,6 +242,17 @@ is_deeply(
     $map_obj->{otd}{m_ant},
     { '2,1' => [ 2, 1 ], '2,4' => [ 2, 4 ] },
     'turn 3 - otd ant'
+);
+
+# Check internal structure about enemy hills - added new.
+is_deeply(
+    $bot->{e_hill_info},
+    #  pos_str           x, y, owner, turn_num,
+    { 
+      '1,4'         => [ 1, 4,     2,        1, ],
+      '2,9'         => [ 2, 9,     1,        3, ]
+     },
+    'e_hill_info - new enemy hill added'
 );
 
 is( $bot->map->dump(1), <<MAP_END, 'turn 3' );
