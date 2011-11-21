@@ -72,10 +72,10 @@ MAP_END
 
 # Check internal structure about enemy hills.
 is_deeply(
-    $bot->{e_hill_info},
-    #  pos_str           x, y, owner, turn_num,
-    { '1,4'         => [ 1, 4,     2,        1, ] },
-    'e_hill_info'
+    $bot->{pos2e_hill},
+    #  pos_str           x, y, owner, e_hill, turn_num,
+    { '1,4'         => [ 1, 4,     2,      1,        1, ] },
+    'pos2e_hill'
 );
 
 
@@ -246,13 +246,13 @@ is_deeply(
 
 # Check internal structure about enemy hills - added new.
 is_deeply(
-    $bot->{e_hill_info},
-    #  pos_str           x, y, owner, turn_num,
+    $bot->{pos2e_hill},
+    #  pos_str           x, y, owner, e_hill, turn_num,
     { 
-      '1,4'         => [ 1, 4,     2,        1, ],
-      '2,9'         => [ 2, 9,     1,        3, ]
+      '1,4'         => [ 1, 4,     2,       1,       1, ],
+      '2,9'         => [ 2, 9,     1,       2,       3, ]
      },
-    'e_hill_info - new enemy hill added'
+    'pos2e_hill - new enemy hill added'
 );
 
 is( $bot->map->dump(1), <<MAP_END, 'turn 3' );

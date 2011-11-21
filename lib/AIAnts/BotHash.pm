@@ -47,7 +47,9 @@ sub setup {
     $self->{hill2pos} = {};
 
     $self->{enemies} = {};
-    $self->{e_hill_info} = {};
+    $self->{max_e_hill} = 0;
+    $self->{pos2e_hill} = {};
+    $self->{e_hill2pos} = {};
 
     $self->{area_diff} = [];
     $self->{chc_num} = {};
@@ -69,20 +71,20 @@ sub turn {
     foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
         next if exists $self->{pos2hill}{$pos_str};
         my ( $x, $y ) = @{ $turn_data->{m_hill}{$pos_str} };
-        $self->turn_pr_my_new_hill_found( $x, $y );
-        $turn_diff->{m_hill}{add}{$pos_str} = 1;
+        my $hill = $self->turn_pr_my_new_hill_found( $x, $y );
+        $turn_diff->{m_hill}{add}{$pos_str} = $hill;
     }
 
-    # Init my new hills.
+    # Init new enemy hills.
     foreach my $pos_str ( keys %{$turn_data->{e_hill}} ) {
-        if ( exists $self->{e_hill_info}{$pos_str} ) {
+        if ( exists $self->{pos2e_hill}{$pos_str} ) {
             # update last seen turn_num
-            $self->{e_hill_info}{$pos_str}[3] = $turn_num;
+            $self->{pos2e_hill}{$pos_str}[-1] = $turn_num;
             next;
         }
         my ( $x, $y, $owner ) = @{ $turn_data->{e_hill}{$pos_str} };
-        $self->turn_pr_e_new_hill_found( $x, $y, $owner, $turn_num );
-        $turn_diff->{e_hill}{rm}{$pos_str} = 1;
+        my $e_hill = $self->turn_pr_new_e_hill_found( $x, $y, $owner, $turn_num );
+        $turn_diff->{e_hill}{add}{$pos_str} = $e_hill;
     }
 
     # Remove my ants (ants died).
@@ -91,7 +93,7 @@ sub turn {
         my $ant = $self->{pos2ant}{$pos_str};
         my ( $x, $y ) = split ',', $pos_str;
         $self->turn_pr_ant_died( $ant, $x, $y );
-        $turn_diff->{m_ant}{add}{$pos_str} = 1;
+        $turn_diff->{m_ant}{rm}{$pos_str} = $ant;
     }
 
     # Add my new ants (ants spawed).
@@ -100,8 +102,8 @@ sub turn {
 
         my ( $x, $y ) = @{ $turn_data->{m_ant}{$pos_str} };
         $self->{m}->process_new_initial_pos( $x, $y, $turn_data );
-        $self->turn_pr_ant_spawed( $x, $y, $turn_data );
-        $turn_diff->{m_ant}{rm}{$pos_str} = 1;
+        my $ant = $self->turn_pr_ant_spawed( $x, $y, $turn_data );
+        $turn_diff->{m_ant}{add}{$pos_str} = $ant;
     }
 
     # Set 'm_new' - new positions found.
@@ -189,12 +191,12 @@ Initialize our new hill.
 sub turn_pr_my_new_hill_found {
     my ( $self, $x, $y ) = @_;
 
-    my $hill_num = ++$self->{max_hill};
-    $self->{pos2hill}{"$x,$y"} = $hill_num;
-    $self->{hill2pos}{$hill_num} = [ $x, $y ];
+    my $hill = ++$self->{max_hill};
+    $self->{pos2hill}{"$x,$y"} = $hill;
+    $self->{hill2pos}{$hill} = [ $x, $y ];
 
-    $self->new_hill_found( $hill_num, $x, $y );
-    return 1;
+    $self->new_hill_found( $hill, $x, $y );
+    return $hill;
 }
 
 =head2 new_hill_found
@@ -204,34 +206,25 @@ Called during 'turn_body' if our new hill was found.
 =cut
 
 sub new_hill_found {
-    my ( $self, $hill_num, $x, $y ) = @_;
+    my ( $self, $hill, $x, $y ) = @_;
     return 1;
 }
 
-=head2 turn_pr_e_new_hill_found
+=head2 turn_pr_new_e_hill_found
 
 Initialize new enemy hill info.
 
 =cut
 
-sub turn_pr_e_new_hill_found {
+sub turn_pr_new_e_hill_found {
     my ( $self, $x, $y, $owner, $turn_num ) = @_;
 
-    $self->{e_hill_info}{"$x,$y"} = [ $x, $y, $owner, $turn_num ];
-    $self->new_hill_found( $x, $y, $owner );
+    my $e_hill = ++$self->{max_e_hill};
+    $self->{e_hill2pos}{$e_hill} = [ $x, $y ];
+
+    $self->{pos2e_hill}{"$x,$y"} = [ $x, $y, $owner, $e_hill, $turn_num ];
+    return $e_hill;
 }
-
-=head2 new_enemy_hill_found
-
-Called during 'turn_body' if new enemy hill was found.
-
-=cut
-
-sub new_enemy_hill_found {
-    my ( $self, $x, $y, $owner ) = @_;
-    return 1;
-}
-
 
 =head2 turn_pr_ant_spawed
 
@@ -249,7 +242,7 @@ sub turn_pr_ant_spawed {
     $self->{ant2hill}{$ant} = $ant_hill;
 
     $self->ant_spawed( $ant, $x, $y, $ant_hill );
-    return 1;
+    return $ant;
 }
 
 =head2 ant_spawed
