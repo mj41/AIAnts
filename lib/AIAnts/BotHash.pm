@@ -291,7 +291,7 @@ sub ant_died {
 
 =head2 turn_body
 
-Main part of turn processing. Should return call 'add_order' method.
+Main part of turn processing. Should call 'add_order' method during processing.
 
 =cut
 

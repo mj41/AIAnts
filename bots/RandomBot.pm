@@ -30,20 +30,12 @@ sub setup {
 
 =head2 turn_body
 
-Main part of turn processing. Should return hash ref with
-
- # "$Nx,$Ny" => [ $ant, $x, $y, $dir, $Nx, $Ny ]
-
-inside if ant moves or
-
- # "$x,$y"   => [ $ant, $x, $y ]
-
-if not.
+Main part of turn processing. Should call 'add_order' method during processing.
 
 =cut
 
 sub turn_body {
-    my ( $self, $turn_num, $turn_data ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
 
     my $dirs = [ 'N', 'E', 'S', 'W' ];
 
@@ -51,18 +43,17 @@ sub turn_body {
     $self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
     $self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
 
-    my $changes = {};
-    my $map_obj = $self->{m};
-    my $map = $map_obj->{m};
-    my $water_bit = $map_obj->{o_bits}{water};
+    my $used = $self->get_initial_used( $turn_data );
+
     foreach my $data ( values %{$turn_data->{m_ant}} ) {
         my ( $x, $y ) = @$data;
 
         my $ant = $self->{pos2ant}{"$x,$y"};
         my $dir;
         my ( $Dx, $Dy, $Nx, $Ny );
-        my $dir_num = int rand 3;
-        while ( 1 ) {
+        my $dir_num = int rand 4;
+        my $attemt = 1;
+        RANDOM: while ( 1 ) {
             $dir = $dirs->[ $dir_num ];
             if ( $dir eq 'N' ) {
                 $Dx = -1;
@@ -78,23 +69,21 @@ sub turn_body {
                 $Dy = -1;
             }
 
-            ( $Nx, $Ny ) = $map_obj->pos_plus( $x, $y, $Dx, $Dy );
-            if ( (not $map->[$Nx][$Ny] & $water_bit)
-                  && (not exists $changes->{"$Nx,$Ny"})
-                  && (not exists $turn_data->{m_ant}{"$Nx,$Ny"})
-               )
-            {
-                $changes->{"$Nx,$Ny"} = [ $ant, $x, $y, $dir, $Nx, $Ny ];
-                last;
+            ( $Nx, $Ny ) = $self->{m}->pos_plus( $x, $y, $Dx, $Dy );
+            if ( $self->{m}->valid_not_used_pos( $Nx, $Ny, $used ) ) {
+                $self->add_order( $ant, $x, $y, $dir, $Nx, $Ny );
+                delete $used->{"$x,$y"};
+                $used->{"$Nx,$Ny"} = 2;
+                last RANDOM;
             }
+            last RANDOM if $attemt == 4;
+            $attemt++;
             $dir_num++;
-            last if $dir_num == 4;
         }
-        $changes->{"$x,$y"} = [ $ant, $x, $y, $dir, undef, undef ] if $dir_num == 4;
     }
 
-    $self->log( "\n" ) if $self->{log};
-    return $changes;
+    $self->log("\n") if $self->{log};
+    return 1;
 }
 
 

@@ -28,22 +28,14 @@ sub setup {
 
 =head2 turn_body
 
-Main part of turn processing. Should return hash ref with
-
- # "$Nx,$Ny" => [ $ant, $x, $y, $dir, $Nx, $Ny ]
-
-inside if ant moves or
-
- # "$x,$y"   => [ $ant, $x, $y ]
-
-if not.
+Main part of turn processing. Should call 'add_order' method during processing.
 
 =cut
 
 sub turn_body {
-    my ( $self, $turn_num, $turn_data ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
 
-    return {};
+    return 1;
 }
 
 =head1 AUTHOR

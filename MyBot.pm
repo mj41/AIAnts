@@ -282,18 +282,9 @@ sub step_to_goal {
     return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
 }
 
-
 =head2 turn_body
 
-Main part of turn processing. Should return hash ref with
-
- # "$Nx,$Ny" => [ $ant, $x, $y, $dir, $Nx, $Ny ]
-
-inside if ant moves or
-
- # "$x,$y"   => [ $ant, $x, $y, $dir, undef, undef ]
-
-if not.
+Main part of turn processing. Should call 'add_order' method during processing.
 
 =cut
 
@@ -334,7 +325,7 @@ sub turn_body {
         }
     }
 
-    $self->log( "\n" ) if $self->{log};
+    $self->log("\n") if $self->{log};
     #use Data::Dumper; $self->log( Dumper( $self->{ant2goal} ) ); die if $turn_num > 3;
     return 1;
 }
