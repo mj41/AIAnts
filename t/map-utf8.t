@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 
 use lib 'lib';
+use lib 'lib-ex';
 use AIAnts::Map;
 
 my $mp = new AIAnts::Map(

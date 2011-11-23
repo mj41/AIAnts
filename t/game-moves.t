@@ -28,6 +28,10 @@ $game->set_input(q(
     ready
 ));
 $game->do_setup;
+
+my $map_obj = $bot->map;
+
+
 is( $bot->map->dump(1), <<MAP_END, 'setup' );
 . . . . . . . . . .
 . . . . . . . . . .
@@ -79,6 +83,21 @@ is_deeply(
 );
 
 
+# N,0,2
+my $path_temp = $map_obj->empty_path_temp();
+is_deeply(
+    [ $map_obj->dir_from_to( 1,2, 1,0, {'0,1'=>1}, $path_temp ) ],
+    [ 'N', 0, 2 ],
+    'dir_from_to 1,2 -> 1,0 step 1'
+);
+is_deeply(
+    $path_temp->{dir_path},
+    [  [ 'W', 0, 1 ], [ 'W', 0, 0 ], [ 'S', 1, 0 ], ],
+    'dir_from_to 1,2 -> 1,0 step 1'
+);
+#$bot->dump( $path_temp );
+
+
 # Prepare turn 2 game output and bot orders. Receive info about position 2,2
 # where ant just moved.
 
@@ -124,7 +143,6 @@ $bot->test_prepare_test_order(  2,  2,  'W',   2,   1 );
 # Do turn 2. We moved on 2,2 and next stop is 1,2.
 $game->do_turn;
 
-my $map_obj = $bot->map;
 
 # Checks after turn 2 - ant on position 2,2.
 my $m_area_diff = $map_obj->vis_cache_on_map( $bot->get_area_diff(), padding=>1 );
@@ -248,7 +266,7 @@ is_deeply(
 is_deeply(
     $bot->{pos2e_hill},
     #  pos_str           x, y, owner, e_hill, turn_num,
-    { 
+    {
       '1,4'         => [ 1, 4,     2,       1,       1, ],
       '2,9'         => [ 2, 9,     1,       2,       3, ]
      },

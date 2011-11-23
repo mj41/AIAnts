@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 
 use lib 'lib';
+use lib 'lib-ex';
 use lib 't/lib';
 use AIAnts::TestBotSimple;
 use AIAnts::TestGame;

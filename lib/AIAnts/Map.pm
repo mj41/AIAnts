@@ -5,6 +5,8 @@ use warnings;
 
 use utf8;
 
+use base 'AI::Pathfinding::AStar';
+
 =head1 NAME
 
 AIAnts::Map
@@ -22,7 +24,8 @@ Constructor.
 =cut
 
 sub new {
-    my ( $class, %args ) = @_;
+    my ( $invocant, %args ) = @_;
+    my $class = ref($invocant) || $invocant;
 
     my $self = {
         mx => $args{rows}-1,
@@ -434,17 +437,6 @@ sub food_exists {
     return ( exists $self->{otd}{food}{"$x,$y"} );
 }
 
-=head2 enemy_hill_exists
-
-Return 1 if enemy hill exists on provided position.
-
-=cut
-
-sub enemy_hill_exists {
-    my ( $self, $x, $y ) = @_;
-    return ( exists $self->{otd}{e_hill}{"$x,$y"} );
-}
-
 =head2 process_new_initial_pos
 
 Initialize map on new initial position.
@@ -466,7 +458,6 @@ sub process_new_initial_pos {
 
     return 1;
 }
-
 
 =head2 update_new_after_turn
 
@@ -587,7 +578,6 @@ sub pos_dir_step {
     return ( $Ax, $Ay );
 }
 
-
 =head2 dist
 
 The x and y distance between A and B positions and x and y direction to get from A to B.
@@ -646,13 +636,130 @@ sub valid_not_used_pos {
     return 1;
 }
 
+=head2 empty_path_temp
+
+Return empty path cache structure.
+
+=cut
 
 sub empty_path_temp {
     my ( $sefl ) = @_;
     return {
         visited => {},
+        dir_path => undef,
     };
 }
+
+=head2 getSurrounding
+
+The routine required by AI::Pathfinding::AStar.
+
+=cut
+
+sub getSurrounding {
+    my ( $self, $source, $target ) = @_;
+
+    my $surrounding = [];
+
+    my $water_bit = $self->{o_bits}{water};
+    my ( $source_x, $source_y ) = split( ',', $source );
+    my @pos_diffs = ( [-1,0], [0,1], [1,0], [0,-1] );
+    foreach my $pos_diff ( @pos_diffs ) {
+
+        my ( $Nx, $Ny ) = $self->pos_plus( $source_x, $source_y, @$pos_diff );
+        my $Npos_str = "$Nx,$Ny";
+
+        next if $self->{m}[$Nx][$Ny] & $water_bit;
+        next if exists $self->{temp_used}{$Npos_str};
+
+        # ToDo - other heuristic functions?
+        my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $source_x, $source_y, split(',',$target) );
+        push @$surrounding, [
+            $Npos_str,
+            1,
+            $dx+$dy
+        ];
+    }
+
+    return $surrounding;
+}
+
+=head2 str_path_from_to
+
+Return path of string positions to get from position A to position B.
+
+=cut
+
+sub str_path_from_to {
+    my ( $self, $Ax, $Ay, $Bx, $By, $used ) = @_;
+
+    $self->{temp_used} = $used;
+    my $path = $self->findPath( "$Ax,$Ay", "$Bx,$By" );
+    $self->{temp_used} = undef;
+    shift @$path;
+    return $path;
+}
+
+=head2 str_path_from_to
+
+Return direction to get from A to B. Distance between A and B must be 1 (only in one direction).
+
+=cut
+
+sub pos_step_to_dir {
+    my ( $self, $Ax, $Ay, $Bx, $By ) = @_;
+
+    if ( $Ax == $Bx ) {
+        if ( $Ay == 0 ) {
+            return 'E' if $By == 1;
+            return 'W';
+        }
+        if ( $By == 0 ) {
+            return 'W' if $Ay == 1;
+            return 'E'
+        }
+        return 'E' if $Ay < $By;
+        return 'W';
+    }
+
+    if ( $Ax == 0 ) {
+        return 'S' if $Bx == 1;
+        return 'N';
+    }
+    if ( $Bx == 0 ) {
+        return 'N' if $Ax == 1;
+        return 'S'
+    }
+    return 'S' if $Ax < $Bx;
+    return 'N';
+}
+
+=head2 dirs_path_from_to
+
+Return direction and new positions when you move to this direction for each step
+on path from A to B.
+
+=cut
+
+sub dirs_path_from_to {
+    my ( $self, $Ax, $Ay, $Bx, $By, $used ) = @_;
+
+    my $path = $self->str_path_from_to( $Ax, $Ay, $Bx, $By, $used );
+    return [] unless scalar @$path;
+
+    my $dir_pos_path = [];
+    my $Px = $Ax;
+    my $Py = $Ay;
+    foreach my $pos_str ( @$path ) {
+        my ( $Nx, $Ny ) = split ',', $pos_str;
+        my $dir = $self->pos_step_to_dir( $Px, $Py, $Nx, $Ny );
+        push @$dir_pos_path, [ $dir, $Nx, $Ny ];
+        $Px = $Nx;
+        $Py = $Ny;
+    }
+    return $dir_pos_path;
+}
+
 
 =head2 dir_from_to
 
@@ -663,6 +770,34 @@ Skip positions in hash ref 'used' parameter.
 
 sub dir_from_to {
     my ( $self, $Ax, $Ay, $Bx, $By, $used, $path_temp ) = @_;
+
+    return () if $Ax == $Bx && $Ay == $By;
+
+    unless ( defined $path_temp->{dir_path} ) {
+        $path_temp->{dir_path} = $self->dirs_path_from_to( $Ax, $Ay, $Bx, $By );
+    }
+
+    return () unless scalar @{ $path_temp->{dir_path} };
+
+    my ( $dir, $Nx, $Ny ) = @{ $path_temp->{dir_path}[0] };
+    return () if $used->{"$Nx,$Ny"};
+
+    shift @{ $path_temp->{dir_path} };
+    return ( $dir, $Nx, $Ny );
+}
+
+
+=head2 dir_from_to_easy
+
+Get direction to get from position A to position B. Also return new position after move.
+Skip positions in hash ref 'used' parameter.
+
+=cut
+
+sub dir_from_to_easy {
+    my ( $self, $Ax, $Ay, $Bx, $By, $used, $path_temp ) = @_;
+
+    return () if $Ax == $Bx && $Ay == $By;
 
     my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $Ax, $Ay, $Bx, $By );
     return () if $dx == 0 && $dy == 0;
@@ -707,7 +842,6 @@ sub dir_from_to {
         ( $Nx, $Ny ) = $self->pos_dir_step( $Ax, $Ay, $dir );
 
         $Npos_str = "$Nx,$Ny";
-
         my $valid = $self->valid_not_used_pos( $Nx, $Ny, $used, $path_temp->{visited} );
         if ( $valid ) {
             $path_temp->{visited}{$Npos_str} = 1;
