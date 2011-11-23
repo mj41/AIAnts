@@ -7,6 +7,7 @@ use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use HTTP::Cookies;
 use WWW::Mechanize;
 use File::Slurp;
+use File::Find;
 
 
 my $upload = $ARGV[0] || '';
@@ -21,17 +22,35 @@ my $time_str = sprintf("%04d-%02d-%02d_%02d-%02d-%02d",($lt[5] + 1900),($lt[4] +
 my $fpath = $dir . 'upl-' . $time_str . '.zip';
 
 my $zip = Archive::Zip->new();
+my $add_file_rs = sub {
+    my ( $fpath ) = @_;
+    print "Adding file: $fpath\n";
+    $zip->addFile( $fpath );
+};
 
-# Add a directory
-$zip->addDirectory('lib/');
-$zip->addDirectory('lib/AIAnts/');
-
-my @files = glob('lib/AIAnts/*');
-$zip->addFile( $_ ) foreach @files;
 
 # Add a file from disk
-$zip->addFile( 'MyBot.pm' );
-$zip->addFile( 'MyBot.pl' );
+$add_file_rs->( 'MyBot.pl' );
+$add_file_rs->( 'MyBot.pm' );
+
+my $wanted = sub {
+    my $item_path = $_;
+
+    # Add a directory
+    if ( -d $item_path ) {
+        #print "Adding directory: $item_path\n";
+        $zip->addDirectory( $item_path );
+        return 1;
+    }
+
+    $add_file_rs->( $item_path );
+    return 1;
+};
+
+
+my @dirs = ( 'lib/', 'bots/', 'lib-ex/', );
+find( { no_chdir=>1, wanted=>$wanted }, @dirs );
+
 
 # Save the Zip file
 unless ( $zip->writeToFileNamed($fpath) == AZ_OK ) {
