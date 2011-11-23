@@ -28,7 +28,8 @@ echo "Running $BOT simple test:" \
 && echo "" \
 && echo "Bot log" \
 && cat temp/output-log.txt \
-&& echo "" \
-&& echo "Bot output temp/bot-output.txt" \
+&& echo ""
+
+echo "Bot output temp/bot-output.txt" \
 && cat temp/bot-output.txt \
 && echo ""

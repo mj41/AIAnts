@@ -4,8 +4,6 @@ use strict;
 use warnings;
 
 use base 'AIAnts::BotHash';
-use Data::Dumper;
-
 
 =head1 NAME
 
@@ -41,7 +39,7 @@ sub turn_body {
 
     $self->log( "turn $turn_num\n" ) if $self->{log};
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
-    #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
+    #$self->dump( $turn_data ) if $self->{log};
 
     my $used = $self->get_initial_used( $turn_data );
 

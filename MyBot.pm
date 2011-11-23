@@ -5,7 +5,6 @@ use warnings;
 
 use base 'AIAnts::BotHash';
 
-use Data::Dumper;
 use Time::HiRes qw/time sleep/;
 
 =head1 NAME
@@ -43,7 +42,7 @@ sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
 
-    $self->log( Dumper( {@_} ) ) if $self->{log};
+    $self->dump( {@_}, 'game_config' ) if $self->{log};
 
     $self->{ant_goal} = {};
     $self->{food2ant} = {};
@@ -227,11 +226,10 @@ sub set_nearest_ants_to_attack {
         unless ( $ant ) {
             # todo
             #$self->log(">>>>>>>>>> no $ant_pos\n");
-            #$self->log( Dumper($self->{pos2ant}) );
+            #$self->dump( $self->{pos2ant} );
             next;
         }
         my $ant_hill = $self->{ant2hill}{$ant};
-        $self->log(">>>>>>>>>> no $ant_pos $ant $ant_hill\n");
 
         $used->{$ant_pos} = 1;
         my $goal = {
@@ -349,7 +347,7 @@ sub turn_body {
 
     $self->log( "turn $turn_num\n" ) if $self->{log};
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
-    #$self->log( Dumper($turn_data) . "\n\n" ) if $self->{log};
+    #$self->dump( $turn_data ) if $self->{log};
 
     my $used = $self->get_initial_used( $turn_data );
 
@@ -395,7 +393,6 @@ sub turn_body {
     }
 
     $self->log("\n") if $self->{log};
-    #use Data::Dumper; $self->log( Dumper( $self->{ant2goal} ) ); die if $turn_num > 3;
     return 1;
 }
 
@@ -407,7 +404,7 @@ Called when game ends.
 
 sub game_over {
     my ( $self ) = @_;
-    $self->log( Dumper($self->{ant2goal})."\n" ) if $self->{log};
+    $self->dump( $self->{ant2goal} ) if $self->{log};
     return $self->SUPER::game_over();
 }
 

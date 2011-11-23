@@ -24,6 +24,8 @@ Setup.
 sub setup {
     my $self = shift;
     $self->SUPER::setup( @_ );
+
+    $self->log( $self->{m}->dump(1) );
 }
 
 =head2 turn_body
@@ -35,6 +37,8 @@ Main part of turn processing. Should call 'add_order' method during processing.
 sub turn_body {
     my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
 
+    $self->dump( $turn_data, 'turn_data, turn '.$turn_num );
+    $self->dump( $turn_diff, 'turn_diff, turn '.$turn_num );
     return 1;
 }
 

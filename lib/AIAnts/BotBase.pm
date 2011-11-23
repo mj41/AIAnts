@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Carp qw(carp croak);
 
+use base 'AIAnts::Base';
 use AIAnts::Map;
 
 =head1 NAME
@@ -137,27 +138,6 @@ sub game_over {
     my ( $self ) = @_;
     $self->log( $self->{m}->dump(1) . "\n" ) if $self->{log};
 }
-
-=head2 log
-
-Append string to log file.
-
- $self->log('',1); # empty (truncate) log file
- $self->log( "text\n" ); # append line with string 'text' to log file
-
-=cut
-
-sub log {
-    my ( $self, $str, $truncate ) = @_;
-    return 0 unless $self->{log};
-
-    open(my $fh, '>>:utf8', $self->{log_fpath} )
-        || croak "Can't open '$self->{log_fpath}' for write: $!\n";
-    truncate($fh, 0) if $truncate;
-    print $fh $str;
-    close $fh;
-}
-
 
 =head1 AUTHOR
 

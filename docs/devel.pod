@@ -1,5 +1,9 @@
 =head1 Info
 
+=head1 Required modules
+
+ cpanm Devel::StackTrace
+
 =head1 Prepare source code
 
  mkdir ~/devel

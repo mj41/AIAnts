@@ -2,8 +2,12 @@ package AIAnts::Game;
 
 use strict;
 use warnings;
+
 use Carp qw(croak);
 use Time::HiRes ();
+
+use base 'AIAnts::Base';
+
 
 =head1 NAME
 
