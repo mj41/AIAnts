@@ -8,7 +8,7 @@ use base 'AIAnts::BotHash';
 
 =head1 NAME
 
-MyBot for L<AIAnts> game.
+Example HungryBot bot for L<AIAnts> game.
 
 =head1 SYNOPSIS
 

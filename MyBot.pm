@@ -5,7 +5,7 @@ use warnings;
 
 use base 'AIAnts::BotHash';
 
-use Time::HiRes qw/time sleep/;
+use Time::HiRes ();
 
 =head1 NAME
 
@@ -74,7 +74,7 @@ Called during 'turn_body' if new ant was spawed (found/created).
 
 sub ant_spawed {
     my ( $self, $ant, $x, $y, $ant_hill ) = @_;
-    $self->log("ant $ant spawed at $x,$y on hill $ant_hill\n") if $self->{log};
+    $self->log("ant$ant spawed at $x.$y on hill $ant_hill\n") if $self->{log};
     return 1;
 }
 
@@ -100,7 +100,7 @@ Called during 'turn_body' if new ant died (was not found on expected position).
 
 sub ant_died {
     my ( $self, $ant, $x, $y, $ant_hill ) = @_;
-    $self->log("ant $ant died at $x,$y\n") if $self->{log};
+    $self->log("ant$ant died at $x.$y\n") if $self->{log};
     $self->remove_ant_goal( $ant, $ant_hill );
     return 1;
 }
@@ -144,7 +144,7 @@ sub get_new_ant_goal {
                 int(rand ($attemt+2)),
             );
             last if $self->{m}->valid_not_used_pos( $x, $y, $used );
-            return 1 if $attemt > 50;
+            return undef if $attemt > 50;
             $attemt++;
         }
 
@@ -175,7 +175,6 @@ sub get_new_ant_goal {
             turns => 20,
             path => $map_obj->empty_path_temp(),
         };
-        return 1;
     }
 
     # explore
@@ -192,12 +191,12 @@ sub get_new_ant_goal {
 
         ( $x, $y ) = $map_obj->pos_plus(
             $ant_x, $ant_y,
-            $dir_x * ( int(rand 15)+1 ),
-            $dir_y * ( int(rand 15)+1 ),
+            $dir_x * ( int(rand 3)+1 ),
+            $dir_y * ( int(rand 3)+1 ),
         );
         last if $self->{m}->valid_not_used_pos( $x, $y, $used );
         $attemts--;
-        return 1 if $attemts <= 0;
+        return undef if $attemts <= 0;
     }
 
     my $max_turns = int(rand(350)**0.5) + 3;
@@ -207,7 +206,6 @@ sub get_new_ant_goal {
         turns => $max_turns,
         path => $map_obj->empty_path_temp(),
     };
-    return 1;
 }
 
 
@@ -267,7 +265,7 @@ sub set_ant_goal {
     $self->{goal_ant_nof}{ $goal_name }++;
     $self->{hill_goal_ant_nof}{ $ant_hill }{ $goal_name }++;
 
-    $self->log("goal set ant $ant to '$goal->{name}', pos $goal->{pos}[1],$goal->{pos}[1], turns $goal->{turns}\n") if $self->{log};
+    $self->log("goal set ant$ant $ant_x.$ant_y to '$goal->{name}' pos $goal->{pos}[0].$goal->{pos}[1] in $goal->{turns} turns\n") if $self->{log};
     return 1;
 }
 
@@ -285,7 +283,7 @@ sub goal_still_valid {
 
     # goal turns limit reached
     if ( $goal->{turns} <= 0 ) {
-        $self->log("goal ant $ant turn limit reached\n") if $self->{log};
+        $self->log("goal ant$ant turn limit reached\n") if $self->{log};
         return 0;
     }
 
@@ -295,7 +293,7 @@ sub goal_still_valid {
     # food
     if ( $goal_name eq 'food' ) {
         return 1 if $self->{m}->food_exists($x,$y);
-        $self->log("goal ant $ant removed - no food on $x,$y\n") if $self->{log};
+        $self->log("goal ant$ant removed - no food on $x,$y\n") if $self->{log};
         delete $self->{food2ant}{"$x,$y"};
         return 0;
     }
@@ -307,15 +305,15 @@ sub goal_still_valid {
     # explore
     if ( $goal_name eq 'explore' ) {
         if ( $self->{hill_goal_ant_nof}{ $ant_hill }{food} < $self->{chc_num}{ant_to_hill_ration} * 0.5 ) {
-            $self->log("goal ant $ant removed - too few 'food' goals \n") if $self->{log};
+            $self->log("goal ant$ant removed - too few 'food' goals \n") if $self->{log};
             return 0;
         }
         return 1 if $x != $ant_x || $y != $ant_y;
-        $self->log("goal ant $ant removed - on postion on $x,$y\n") if $self->{log};
+        $self->log("goal ant$ant removed - on postion on $x.$y\n") if $self->{log};
         return 0;
     }
 
-    $self->log("goal ant $ant unknown type '$goal_name'\n") if $self->{log};
+    $self->log("goal ant$ant unknown type '$goal_name'\n") if $self->{log};
     return 1;
 }
 
@@ -369,23 +367,23 @@ sub turn_body {
             # not need to set new goal
 
         } elsif ( not exists $self->{ant2goal}{$ant} ) {
-            $self->log("goal ant $ant setting the first goal\n") if $self->{log};
+            $self->log("goal ant$ant setting the first goal\n") if $self->{log};
             my $goal = $self->get_new_ant_goal( $ant, $ant_x, $ant_y, $ant_hill, $used );
-            $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill, $used );
+            $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill, $used ) if defined $goal;
 
         } elsif ( not $self->goal_still_valid($ant,$ant_x,$ant_y,$ant_hill) ) {
-            $self->log("goal ant $ant no valid, setting new goal\n") if $self->{log};
+            $self->log("goal ant$ant no valid, setting new goal\n") if $self->{log};
             my $goal = $self->get_new_ant_goal( $ant, $ant_x, $ant_y, $ant_hill, $used );
-            $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill, $used );
+            $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill, $used ) if defined $goal;
         }
         my ( $dir, $Nx, $Ny ) = $self->step_to_goal( $ant, $ant_x, $ant_y, $used, $turn_data );
 
         if ( (not defined $dir) || ($Nx == $ant_x && $Ny == $ant_y) ) {
-            #$self->log("... move ant $ant stay on $ant_x,$ant_y\n") if $self->{log};
+            #$self->log("... move ant$ant stay on $ant_x.$ant_y\n") if $self->{log};
             $used->{$ant_pos} = 2;
 
         } else {
-            #$self->log("... move ant $ant ($ant_x,$ant_y) $dir to $Nx,$Ny\n") if $self->{log};
+            #$self->log("... move ant$ant $ant_x.$ant_y $dir to $Nx.$Ny\n") if $self->{log};
             $self->add_order( $ant, $ant_x, $ant_y, $dir, $Nx, $Ny );
             delete $used->{$ant_pos};
             $used->{"$Nx,$Ny"} = 2;
