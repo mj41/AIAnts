@@ -199,12 +199,12 @@ Do one turn init_turn, parse_turn, turn. Return 0 if it was the last turn 1 othe
 sub do_turn {
     my $self = shift;
 
+    my $turn_start_time = Time::HiRes::time();
     $self->{turn_num}++;
     $self->init_turn( $self->{turn_num} );
     my ( $last_cmd, $turn_data ) = $self->parse_turn();
     return 0 if $last_cmd eq 'end';
 
-    my $turn_start_time = Time::HiRes::time();
     if ( $self->{control_turntime} ) {
         $self->turn( $self->{turn_num}, $turn_data, $turn_start_time );
     } else {
@@ -328,7 +328,11 @@ Simple implementation of turn_method.
 sub turn_simple {
     my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
 
-    $self->{bot}->turn( $turn_num, $turn_data, $turn_start_time );
+    $self->{bot}->turn(
+        $turn_num,
+        $turn_data,
+        $turn_start_time+$self->{config}{turntime}/1000
+    );
     $self->issue_bot_orders();
     return 1;
 }
@@ -345,35 +349,42 @@ sub turn {
     my $remaining_turn_time_us = (
         $self->{config}{turntime}                             # allowed turn time in ms
         - int((Time::HiRes::time() - $turn_start_time)*1000)  # minus time already elapsed in ms
-        - 0.1                                                 # minus 0.1 miliseconds to process alarm sub
+        - 3                                                   # minus miliseconds to process alarm sub
     ) * 1000;                                                 # form miliseconds to microseconds
+
+    if ( $remaining_turn_time_us < 0 ) {
+        $self->my_say('go');
+        return 1;
+    }
 
     eval {
         local $SIG{ALRM} = sub {
-            $self->turn_alarm_raised();
-            die "turntime reached";
+            die "aiants turntime reached";
         };
+        # Remove next line to debug turntime ALRM signals. See MyBot.pl __DIE__.
+        local $SIG{__DIE__} = 'IGNORE';
+
         Time::HiRes::ualarm( $remaining_turn_time_us );
-        $self->{bot}->turn( $turn_num, $turn_data, $turn_start_time );
-        Time::HiRes::ualarm(0);
+        $self->{bot}->turn(
+            $turn_num,
+            $turn_data,
+            $turn_start_time+$self->{config}{turntime}/1000
+        );
     };
+    Time::HiRes::ualarm(0);
+    #$SIG{ALRM} = 'DEFAULT';
+
     if ( $@ ) {
         my $err = $@;
-        die $err if $err !~ /turntime reached/;
-    } else {
-        $self->issue_bot_orders();
+        if ( $err !~ /aiants turntime reached/ ) {
+            $self->{bot}->log( sprintf("--- die %s %0.3f ms\n", $err, (Time::HiRes::time()-$turn_start_time)*1000) );
+            die $err;
+        }
     }
+
+    $self->issue_bot_orders();
+    $self->{bot}->log( sprintf("--- go send in %0.3f ms \n\n", (Time::HiRes::time()-$turn_start_time)*1000) );
     return 1;
-}
-
-=head2 turn_alarm_raised
-
-This method is called each turn if time almost exceed allowed turn_time.
-
-=cut
-
-sub turn_alarm_raised {
-    $_[0]->issue_bot_orders();
 }
 
 =head2 issue_bot_orders
@@ -393,6 +404,7 @@ sub issue_bot_orders {
         );
     }
     $_[0]->my_say('go');
+    return 1;
 }
 
 =head2 my_say
