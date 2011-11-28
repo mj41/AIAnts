@@ -5,12 +5,13 @@ use warnings;
 
 use FindBin;
 use Carp qw(carp croak verbose);
-use Devel::StackTrace;
 use Time::HiRes ();
+
+use lib "$FindBin::Bin/lib-ex";
+use Devel::StackTrace;
 
 use lib "$FindBin::Bin";
 use lib "$FindBin::Bin/lib";
-use lib "$FindBin::Bin/lib-ex";
 use lib "$FindBin::Bin/bots";
 
 use AIAnts::Game;
@@ -52,6 +53,7 @@ $SIG{__DIE__} = sub {
     print STDERR "--- s " . Time::HiRes::time() . ' ' . ('-' x 90) . "\n";
     print STDERR $st->as_string();
     print STDERR "--- e " . ('-' x 100) . "\n";
+    #die;
     #exit; # bot crashed
 };
 
