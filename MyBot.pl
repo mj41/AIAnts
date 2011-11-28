@@ -4,6 +4,9 @@ use strict;
 use warnings;
 
 use FindBin;
+use Carp qw(carp croak verbose);
+use Devel::StackTrace;
+use Time::HiRes ();
 
 use lib "$FindBin::Bin";
 use lib "$FindBin::Bin/lib";
@@ -42,6 +45,15 @@ if ( $ver >= 5 ) {
     print "verbose level: $ver\n";
     print "log to file: $log_fpath\n";
 }
+
+
+$SIG{__DIE__} = sub {
+    my $st = Devel::StackTrace->new();
+    print STDERR "--- s " . Time::HiRes::time() . ' ' . ('-' x 90) . "\n";
+    print STDERR $st->as_string();
+    print STDERR "--- e " . ('-' x 100) . "\n";
+    #exit; # bot crashed
+};
 
 
 my $bot = MyBot->new(
