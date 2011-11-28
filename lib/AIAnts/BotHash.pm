@@ -36,6 +36,7 @@ sub setup {
     $self->SUPER::setup( @_ );
 
     $self->{turn_num} = 0;
+    $self->{prep_orders} = [];
 
     $self->{max_ant} = 0;
     $self->{pos2ant} = {};
@@ -62,10 +63,35 @@ See L<AIANts::BotBase::turn> method documentation.
 =cut
 
 sub turn {
-    my ( $self, $turn_num, $turn_data, $turn_start_time ) = @_;
+    my ( $self, $turn_num, $turn_data, $stop_turntime ) = @_;
 
-
+    $self->{prep_orders} = [];
     my $turn_diff = {};
+
+    # Remove my ants (ants died).
+    foreach my $pos_str ( keys %{$turn_data->{corpse}} ) {
+        next unless exists $self->{pos2ant}{$pos_str};
+        my $ant = delete $self->{pos2ant}{$pos_str};
+        my ( $x, $y ) = split ',', $pos_str;
+        $self->turn_pr_ant_died( $ant, $x, $y );
+        $turn_diff->{m_ant}{rm}{$pos_str} = $ant;
+    }
+
+    # Update data for 'move blocked'.
+    foreach my $pos_str ( keys %{$self->{pos2ant}} ) {
+        next if exists $turn_data->{m_ant}{$pos_str};
+
+        my $ant = delete $self->{pos2ant}{$pos_str};
+        unless ( exists $self->{ant2prev_pos}{$ant} ) {
+            $self->log("=e==> ant$ant $pos_str do not have ant2prev_pos\n") if $self->{log};
+            next;
+        }
+
+        my ( $prev_x, $prev_y, $prev_dir ) = @{ $self->{ant2prev_pos}{$ant} };
+        $self->{pos2ant}{"$prev_x,$prev_y"} = $ant;
+        $self->log("=w==> ant$ant blocked on move $prev_dir from $prev_x,$prev_y to $pos_str\n") if $self->{log};
+    }
+
 
     # Init my new hills.
     foreach my $pos_str ( keys %{$turn_data->{m_hill}} ) {
@@ -87,14 +113,6 @@ sub turn {
         $turn_diff->{e_hill}{add}{$pos_str} = $e_hill;
     }
 
-    # Remove my ants (ants died).
-    foreach my $pos_str ( keys %{$self->{pos2ant}} ) {
-        next if exists $turn_data->{m_ant}{$pos_str};
-        my $ant = $self->{pos2ant}{$pos_str};
-        my ( $x, $y ) = split ',', $pos_str;
-        $self->turn_pr_ant_died( $ant, $x, $y );
-        $turn_diff->{m_ant}{rm}{$pos_str} = $ant;
-    }
 
     # Add my new ants (ants spawed).
     foreach my $pos_str ( keys %{$turn_data->{m_ant}} ) {
@@ -123,7 +141,7 @@ sub turn {
         ant_to_hill_ration => int( $ant_nof / $hill_nof ),
     };
 
-    $self->turn_body( $turn_num, $turn_data, $turn_diff );
+    $self->turn_body( $turn_num, $turn_data, $turn_diff, $stop_turntime );
 
     return 1;
 }
@@ -136,7 +154,7 @@ Return hash with position not possible to move on (including own hills).
 
 sub get_initial_used {
     my ( $self, $turn_data ) = @_;
-    
+
     # Processing 'foreach ant', so we need to track used locations.
     my $used = {};
 
@@ -171,15 +189,33 @@ sub add_order {
     return 1 unless defined $Nx;
     return 1 if ($x == $Nx) && ($y == $Ny);
 
-    # move
-
-    # Delete old and set new ant_num pos.
-    delete $self->{pos2ant}{"$x,$y"};
-    $self->{pos2ant}{"$Nx,$Ny"} = $ant;
-
-    $self->{ant2prev_pos}{$ant} = [ $x, $y, $dir ];
-    push @{$self->{orders}}, [ $x, $y, $dir ];
+    push @{$self->{prep_orders}}, [ $ant, $x, $y, $dir, $Nx, $Ny ];
     return 1;
+
+}
+
+=head2 get_orders_fast
+
+See L<AIANts::BotBase::get_orders_fast> method documentation.
+
+=cut
+
+sub get_orders_fast {
+    my ( $self ) = @_;
+
+    foreach my $raw_order ( @{$self->{prep_orders}} ) {
+        my ( $ant, $x, $y, $dir, $Nx, $Ny ) = @$raw_order;
+
+        $self->{ant2prev_pos}{$ant} = [ $x, $y, $dir ];
+
+        # Delete old and set new ant_num pos.
+        delete $self->{pos2ant}{"$x,$y"};
+        $self->{pos2ant}{"$Nx,$Ny"} = $ant;
+
+        push @{$self->{orders}}, [ $x, $y, $dir ];
+    }
+
+    return $self->{orders};
 }
 
 =head2 turn_pr_my_new_hill_found
@@ -289,7 +325,7 @@ Main part of turn processing. Should call 'add_order' method during processing.
 =cut
 
 sub turn_body {
-    my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_diff, $stop_turntime ) = @_;
     return 1;
 }
 
