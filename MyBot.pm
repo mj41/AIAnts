@@ -213,6 +213,8 @@ sub set_nearest_ants_to_attack {
     my ( $self, $target_type, $target_x, $target_y, $ants_in_army, $re_goaled ) = @_;
     $ants_in_army = 1 unless $ants_in_army;
 
+
+    $self->log("... computing attack to $target_type $target_x.$target_x\n") if $self->{log};
     my $used = {};
     my $reg_num = 0;
     foreach (0..$ants_in_army) {
@@ -239,6 +241,7 @@ sub set_nearest_ants_to_attack {
         };
 
         $self->remove_ant_goal( $ant, $ant_hill );
+        $self->log("... ant$ant $ant_x.$ant_y set to attack\n") if $self->{log};
         $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill );
 
         $reg_num++;
@@ -324,14 +327,20 @@ Return ( $dir, $Nx, $Ny ) of next step to meat ant goal.
 =cut
 
 sub step_to_goal {
-    my ( $self, $ant, $ant_x, $ant_y, $used, $turn_data ) = @_;
+    my ( $self, $ant, $ant_x, $ant_y, $used, $turn_data, $stop_turntime ) = @_;
 
     my $goal = $self->{ant2goal}{$ant};
     return () unless ref $goal;
 
     $goal->{turns}--;
     my ( $goal_x, $goal_y ) = @{ $goal->{pos} };
+    if ( $stop_turntime < Time::HiRes::time()+10/1000 ) {
+        $self->log("...using easy computation of dir_from_to ant$ant $ant_x.$ant_y to $goal_x.$goal_y ($stop_turntime < ".(Time::HiRes::time()+10/1000)."\n") if $self->{log};
+        return $self->{m}->dir_from_to_easy( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
+    }
+    $self->log("...using full computation of dir_from_to ant$ant $ant_x.$ant_y to $goal_x.$goal_y  ($stop_turntime < ".(Time::HiRes::time()+10/1000)."\n") if $self->{log};
     return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
+
 }
 
 =head2 turn_body
@@ -341,7 +350,7 @@ Main part of turn processing. Should call 'add_order' method during processing.
 =cut
 
 sub turn_body {
-    my ( $self, $turn_num, $turn_data, $turn_diff ) = @_;
+    my ( $self, $turn_num, $turn_data, $turn_diff, $stop_turntime ) = @_;
 
     $self->log( "turn $turn_num\n" ) if $self->{log};
     #$self->log( $self->{m}->dump(1) . "\n\n" ) if $self->{log};
@@ -376,7 +385,7 @@ sub turn_body {
             my $goal = $self->get_new_ant_goal( $ant, $ant_x, $ant_y, $ant_hill, $used );
             $self->set_ant_goal( $ant_x, $ant_y, $goal, $ant, $ant_hill, $used ) if defined $goal;
         }
-        my ( $dir, $Nx, $Ny ) = $self->step_to_goal( $ant, $ant_x, $ant_y, $used, $turn_data );
+        my ( $dir, $Nx, $Ny ) = $self->step_to_goal( $ant, $ant_x, $ant_y, $used, $turn_data, $stop_turntime );
 
         if ( (not defined $dir) || ($Nx == $ant_x && $Ny == $ant_y) ) {
             #$self->log("... move ant$ant stay on $ant_x.$ant_y\n") if $self->{log};
