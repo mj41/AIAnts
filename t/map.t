@@ -133,27 +133,27 @@ is $mp->pos_step_to_dir( 5,0, 0,0 ), 'S', 'pos_step_to_dir 5,0 -> 0,0 S';
 
 
 # str_path_from_to
-is_deeply $mp->str_path_from_to( 0,0, 0,0 ), [], 'str_path_from_to 0,0 -> 0,0';
+is_deeply $mp->str_path_from_to( 0,0, 0,0 ), ['0,0'], 'str_path_from_to 0,0 -> 0,0';
 
-is_deeply $mp->str_path_from_to( 0,0, 0,1 ), ['0,1'], 'str_path_from_to 0,0 -> 0,1';
-is_deeply $mp->str_path_from_to( 0,0, 0,2 ), ['0,2'], 'str_path_from_to 0,0 -> 0,2';
-is_deeply $mp->str_path_from_to( 0,0, 1,0 ), ['1,0'], 'str_path_from_to 0,0 -> 1,0';
+is_deeply $mp->str_path_from_to( 0,0, 0,1 ), ['0,0','0,1'], 'str_path_from_to 0,0 -> 0,1';
+is_deeply $mp->str_path_from_to( 0,0, 0,2 ), ['0,0','0,2'], 'str_path_from_to 0,0 -> 0,2';
+is_deeply $mp->str_path_from_to( 0,0, 1,0 ), ['0,0','1,0'], 'str_path_from_to 0,0 -> 1,0';
 
-is_deeply $mp->str_path_from_to( 0,1, 0,0 ), ['0,0'], 'str_path_from_to 0,0 <- 0,1';
-is_deeply $mp->str_path_from_to( 0,2, 0,0 ), ['0,0'], 'str_path_from_to 0,0 <- 0,2';
-is_deeply $mp->str_path_from_to( 1,0, 0,0 ), ['0,0'], 'str_path_from_to 0,0 <- 1,0';
+is_deeply $mp->str_path_from_to( 0,1, 0,0 ), ['0,1','0,0'], 'str_path_from_to 0,0 <- 0,1';
+is_deeply $mp->str_path_from_to( 0,2, 0,0 ), ['0,2','0,0'], 'str_path_from_to 0,0 <- 0,2';
+is_deeply $mp->str_path_from_to( 1,0, 0,0 ), ['1,0','0,0'], 'str_path_from_to 0,0 <- 1,0';
 
 
 # dirs_path_from_to
-is_deeply $mp->dirs_path_from_to( 0,0, 0,0 ), [], 'dirs_path_from_to 0,0 -> 0,0';
+is_deeply $mp->dirs_path_from_to( 0,0, 0,0 ), [ ['W',0,0] ], 'dirs_path_from_to 0,0 -> 0,0';
 
-is_deeply $mp->dirs_path_from_to( 0,0, 0,1 ), [ ['E',0,1] ], 'dirs_path_from_to 0,0 -> 0,1';
-is_deeply $mp->dirs_path_from_to( 0,0, 0,2 ), [ ['W',0,2] ], 'dirs_path_from_to 0,0 -> 0,2';
-is_deeply $mp->dirs_path_from_to( 0,0, 1,0 ), [ ['S',1,0] ], 'dirs_path_from_to 0,0 -> 1,0';
+is_deeply $mp->dirs_path_from_to( 0,0, 0,1 ), [ ['W',0,0], ['E',0,1] ], 'dirs_path_from_to 0,0 -> 0,1';
+is_deeply $mp->dirs_path_from_to( 0,0, 0,2 ), [ ['W',0,0], ['W',0,2] ], 'dirs_path_from_to 0,0 -> 0,2';
+is_deeply $mp->dirs_path_from_to( 0,0, 1,0 ), [ ['W',0,0], ['S',1,0] ], 'dirs_path_from_to 0,0 -> 1,0';
 
-is_deeply $mp->dirs_path_from_to( 0,1, 0,0 ), [ ['W',0,0] ], 'dirs_path_from_to 0,0 <- 0,1';
-is_deeply $mp->dirs_path_from_to( 0,2, 0,0 ), [ ['E',0,0] ], 'dirs_path_from_to 0,0 <- 0,2';
-is_deeply $mp->dirs_path_from_to( 1,0, 0,0 ), [ ['N',0,0] ], 'dirs_path_from_to 0,0 <- 1,0';
+is_deeply $mp->dirs_path_from_to( 0,1, 0,0 ), [ ['W',0,1], ['W',0,0] ], 'dirs_path_from_to 0,0 <- 0,1';
+is_deeply $mp->dirs_path_from_to( 0,2, 0,0 ), [ ['W',0,2], ['E',0,0] ], 'dirs_path_from_to 0,0 <- 0,2';
+is_deeply $mp->dirs_path_from_to( 1,0, 0,0 ), [ ['W',1,0], ['N',0,0] ], 'dirs_path_from_to 0,0 <- 1,0';
 
 
 done_testing();

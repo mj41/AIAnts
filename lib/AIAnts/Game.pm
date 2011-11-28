@@ -377,13 +377,13 @@ sub turn {
     if ( $@ ) {
         my $err = $@;
         if ( $err !~ /aiants turntime reached/ ) {
-            $self->{bot}->log( sprintf("--- die %s %0.3f ms\n", $err, (Time::HiRes::time()-$turn_start_time)*1000) );
+            $self->{bot}->log( sprintf("--- die %s %0.3f ms\n", $err, (Time::HiRes::time()-$turn_start_time)*1000) ) if $self->{bot}->{log};;
             die $err;
         }
     }
 
     $self->issue_bot_orders();
-    $self->{bot}->log( sprintf("--- go send in %0.3f ms \n\n", (Time::HiRes::time()-$turn_start_time)*1000) );
+    $self->{bot}->log( sprintf("--- go send in %0.3f ms \n\n", (Time::HiRes::time()-$turn_start_time)*1000) ) if $self->{bot}->{log};;
     return 1;
 }
 

@@ -662,22 +662,23 @@ sub getSurrounding {
     my $surrounding = [];
 
     my $water_bit = $self->{o_bits}{water};
-    my ( $source_x, $source_y ) = split( ',', $source );
+    my ( $source_x, $source_y ) = split ',', $source;
+    my ( $target_x, $target_y ) = split ',', $target;
     my @pos_diffs = ( [-1,0], [0,1], [1,0], [0,-1] );
     foreach my $pos_diff ( @pos_diffs ) {
 
         my ( $Nx, $Ny ) = $self->pos_plus( $source_x, $source_y, @$pos_diff );
-        my $Npos_str = "$Nx,$Ny";
-
         next if $self->{m}[$Nx][$Ny] & $water_bit;
+
+        my $Npos_str = "$Nx,$Ny";
         next if exists $self->{temp_used}{$Npos_str};
 
-        # ToDo - other heuristic functions?
-        my ( $dx, $dir_x, $dy, $dir_y ) = $self->dist( $source_x, $source_y, split(',',$target) );
+        my ( $dx1, undef, $dy1, undef ) = $self->dist( $source_x, $source_y, $Nx, $Ny );
+        my ( $dx2, undef, $dy2, undef ) = $self->dist( $Nx, $Ny, $target_x, $target_y );
         push @$surrounding, [
             $Npos_str,
             1,
-            $dx+$dy
+            $dx1+$dy1+$dx2+$dy2
         ];
     }
 
@@ -696,7 +697,6 @@ sub str_path_from_to {
     $self->{temp_used} = $used;
     my $path = $self->findPath( "$Ax,$Ay", "$Bx,$By" );
     $self->{temp_used} = undef;
-    shift @$path;
     return $path;
 }
 
@@ -769,18 +769,47 @@ Skip positions in hash ref 'used' parameter.
 =cut
 
 sub dir_from_to {
-    my ( $self, $Ax, $Ay, $Bx, $By, $used, $path_temp ) = @_;
+    my ( $self, $Fx, $Fy, $Tx, $Ty, $used, $path_temp ) = @_;
 
-    return () if $Ax == $Bx && $Ay == $By;
+    return () if $Fx == $Tx && $Fy == $Ty;
 
     unless ( defined $path_temp->{dir_path} ) {
-        $path_temp->{dir_path} = $self->dirs_path_from_to( $Ax, $Ay, $Bx, $By );
+        $path_temp->{dir_path} = $self->dirs_path_from_to( $Fx, $Fy, $Tx, $Ty );
     }
 
     return () unless scalar @{ $path_temp->{dir_path} };
 
-    my ( $dir, $Nx, $Ny ) = @{ $path_temp->{dir_path}[0] };
-    return () if $used->{"$Nx,$Ny"};
+    # We should be here.
+    my ( undef, $Sx, $Sy ) = @{ $path_temp->{dir_path}[0] };
+    if ( $Sx != $Fx || $Sy != $Fy ) {
+        return $self->dir_from_to_easy( $Fx, $Fy, $Sx, $Sy, $used, $path_temp );
+    }
+
+    # Next step we should be here.
+    my ( $dir, $Nx, $Ny ) = @{ $path_temp->{dir_path}[1] };
+
+    # Avoid one to one bot lock.
+    if ( $used->{"$Nx,$Ny"} ) {
+        return () if $dir eq 'W' || $dir eq 'N';
+        my $temp_dir = $dir eq 'E' ? 'S' : 'W';
+        my ( $Px, $Py ) = $self->pos_dir_step( $Fx, $Fy, $temp_dir );
+        return () if $used->{"$Px,$Py"};
+        return () if $self->{m}[$Px][$Py] & $self->{o_bits}{water};
+        return () if $path_temp->{visited}{"$Px,$Py"};
+
+        # Try to not move back.
+        $path_temp->{visited}{"$Px,$Py"} = 1;
+        shift @{ $path_temp->{dir_path} };
+        return ( $temp_dir, $Px, $Py );
+    }
+
+    # todo - was not explored on time when path was calculated
+    if ( $self->{m}[$Nx][$Ny] & $self->{o_bits}{water} ) {
+        $path_temp->{dir_path} = [];
+        return ();
+        #$path_temp->{dir_path} = $self->dirs_path_from_to( $Fx, $Fy, $Tx, $Ty );
+        #return $self->dir_from_to( $Fx, $Fy, $Tx, $Ty, $used, $path_temp );
+    }
 
     shift @{ $path_temp->{dir_path} };
     return ( $dir, $Nx, $Ny );

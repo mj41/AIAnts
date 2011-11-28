@@ -338,6 +338,11 @@ sub step_to_goal {
         $self->log("...using easy computation of dir_from_to ant$ant $ant_x.$ant_y to $goal_x.$goal_y ($stop_turntime < ".(Time::HiRes::time()+10/1000)."\n") if $self->{log};
         return $self->{m}->dir_from_to_easy( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
     }
+
+    # todo - turnlimit problem
+    $self->log("...using easy computation of dir_from_to ant$ant $ant_x.$ant_y to $goal_x.$goal_y  ($stop_turntime < ".(Time::HiRes::time()+10/1000)."\n") if $self->{log};
+    return $self->{m}->dir_from_to_easy( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
+
     $self->log("...using full computation of dir_from_to ant$ant $ant_x.$ant_y to $goal_x.$goal_y  ($stop_turntime < ".(Time::HiRes::time()+10/1000)."\n") if $self->{log};
     return $self->{m}->dir_from_to( $ant_x, $ant_y, $goal_x, $goal_y, $used, $goal->{path} );
 

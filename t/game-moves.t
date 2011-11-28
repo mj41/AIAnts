@@ -83,17 +83,32 @@ is_deeply(
 );
 
 
-# N,0,2
+# S,2,2
 my $path_temp = $map_obj->empty_path_temp();
 is_deeply(
     [ $map_obj->dir_from_to( 1,2, 1,0, {'0,1'=>1}, $path_temp ) ],
-    [ 'N', 0, 2 ],
+    [ 'S', 2, 2 ],
     'dir_from_to 1,2 -> 1,0 step 1'
 );
 is_deeply(
     $path_temp->{dir_path},
-    [  [ 'W', 0, 1 ], [ 'W', 0, 0 ], [ 'S', 1, 0 ], ],
-    'dir_from_to 1,2 -> 1,0 step 1'
+    [  [ 'S', 2, 2 ], [ 'W', 2, 1 ], [ 'W', 2, 0 ], [ 'N', 1, 0 ], ],
+    'dir_from_to 1,2 -> 1,0 dir_path after step 1'
+);
+is_deeply(
+    [ $map_obj->dir_from_to( 2,2, 1,0, {'0,1'=>1}, $path_temp ) ],
+    [ 'W', 2, 1 ],
+    'dir_from_to 1,2 -> 1,0 step 2'
+);
+is_deeply(
+    [ $map_obj->dir_from_to( 2,1, 1,0, {'0,1'=>1}, $path_temp ) ],
+    [ 'W', 2, 0 ],
+    'dir_from_to 1,2 -> 1,0 step 3'
+);
+is_deeply(
+    $path_temp->{dir_path},
+    [ [ 'W', 2, 0 ], [ 'N', 1, 0 ], ],
+    'dir_from_to 1,2 -> 1,0 dir_path after step 3'
 );
 #$bot->dump( $path_temp );
 
